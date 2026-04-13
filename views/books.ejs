@@ -1,0 +1,81 @@
+<%- include('partials/header') %>
+
+<div class="mt-page">
+  <div class="page-hero">
+    <div class="container">
+      <div class="section-label">Library</div>
+      <h1 class="page-hero-title">Browse Books</h1>
+      <p class="page-hero-sub">Indian 🇮🇳 & Foreign 🌍 — Novels, Classics, Stories, Self-Help & More</p>
+    </div>
+  </div>
+
+  <section class="section section-dark">
+    <div class="container">
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="filter-search">
+          <i class="fas fa-search filter-search-icon"></i>
+          <form action="/books" method="GET">
+            <% if (category) { %><input type="hidden" name="category" value="<%= category %>"><% } %>
+            <% if (origin) { %><input type="hidden" name="origin" value="<%= origin %>"><% } %>
+            <input type="text" name="search" placeholder="Search title or author…" value="<%= search || '' %>">
+          </form>
+        </div>
+        <div class="pill-group">
+          <a href="/books" class="pill <%= !category && !origin ? 'active' : '' %>">All</a>
+          <a href="/books?origin=Indian"  class="pill pill-indian  <%= origin==='Indian'  ? 'active' : '' %>">🇮🇳 Indian</a>
+          <a href="/books?origin=Foreign" class="pill pill-foreign <%= origin==='Foreign' ? 'active' : '' %>">🌍 Foreign</a>
+          <% categories.forEach(cat => { %>
+            <a href="/books?category=<%= cat %>" class="pill <%= category===cat ? 'active' : '' %>"><%= cat %></a>
+          <% }) %>
+        </div>
+      </div>
+
+      <p class="result-count">
+        Showing <strong><%= books.length %></strong> books
+        <% if (search) { %> for "<strong><%= search %></strong>"<% } %>
+        <% if (category) { %> in <strong><%= category %></strong><% } %>
+        <% if (origin) { %> · <strong><%= origin %></strong> authors<% } %>
+      </p>
+
+      <% if (books.length === 0) { %>
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <h4>No books found</h4>
+          <p>Try a different keyword, category, or filter. <a href="/books">Clear all filters</a></p>
+        </div>
+      <% } else { %>
+        <div class="books-grid">
+          <% books.forEach(book => { %>
+          <div class="book-card reveal">
+            <div class="book-cover-wrap">
+              <img src="<%= book.cover %>" alt="<%= book.title %>" loading="lazy">
+              <div class="book-hover-overlay">
+                <a href="/books/<%= book.id %>/read" class="btn-hover-read"><i class="fas fa-book-reader"></i> Read Free</a>
+                <a href="/books/<%= book.id %>"       class="btn-hover-buy"><i class="fas fa-eye"></i> Details</a>
+              </div>
+              <% if (book.bestseller) { %><span class="book-badge badge-best">Best</span><% } %>
+              <span class="book-badge <%= book.origin==='Indian'?'badge-origin-in':'badge-origin-fo' %>" style="top:auto;bottom:10px;left:10px">
+                <%= book.origin==='Indian' ? '🇮🇳' : '🌍' %>
+              </span>
+            </div>
+            <div class="book-info">
+              <div class="book-cat"><%= book.category %></div>
+              <div class="book-name"><a href="/books/<%= book.id %>"><%= book.title %></a></div>
+              <div class="book-auth"><%= book.author %></div>
+              <div class="book-foot">
+                <span class="book-price">₹<%= book.price %></span>
+                <span class="book-rating"><i class="fas fa-star"></i> <%= book.rating %></span>
+              </div>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+    </div>
+  </section>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,162 @@
+<%- include('partials/header') %>
+
+<div class="mt-page">
+<section class="section section-dark">
+  <div class="container">
+
+    <div class="breadcrumb-custom">
+      <a href="/">Home</a>
+      <span class="breadcrumb-sep">/</span>
+      <a href="/books">Library</a>
+      <span class="breadcrumb-sep">/</span>
+      <span style="color:var(--text-2)"><%= book.title %></span>
+    </div>
+
+    <div class="detail-layout">
+
+      <!-- LEFT — Cover + Actions -->
+      <div class="detail-cover-sticky">
+        <div class="detail-cover-frame">
+          <img src="<%= book.cover %>" alt="<%= book.title %>">
+        </div>
+
+        <div class="detail-actions">
+          <% if (!user) { %>
+            <a href="/login" class="btn-read-full">
+              <i class="fas fa-book-reader"></i> Sign in to Read Free
+            </a>
+            <a href="/login" class="btn-buy-full">
+              <i class="fas fa-shopping-cart"></i> Sign in to Buy — ₹<%= book.price %>
+            </a>
+          <% } else { %>
+            <% const alreadyRead  = userData && userData.readBooks      && userData.readBooks.includes(book.id) %>
+            <% const alreadyBought= userData && userData.purchasedBooks && userData.purchasedBooks.includes(book.id) %>
+            <% const inCart       = userData && userData.cart           && userData.cart.includes(book.id) %>
+
+            <a href="/books/<%= book.id %>/read" class="btn-read-full">
+              <i class="fas fa-<%= alreadyRead ? 'book-open' : 'book-reader' %>"></i>
+              <%= alreadyRead ? 'Continue Reading' : 'Read Online — Free' %>
+            </a>
+
+            <% if (alreadyBought) { %>
+              <button class="btn-buy-full purchased" disabled>
+                <i class="fas fa-check-circle"></i> In Your Library
+              </button>
+            <% } else if (inCart) { %>
+              <a href="/user/dashboard" class="btn-buy-full in-cart">
+                <i class="fas fa-shopping-cart"></i> View in Cart
+              </a>
+            <% } else { %>
+              <button class="btn-buy-full" id="buyBtn" onclick="addToCart(<%= book.id %>, this)">
+                <i class="fas fa-shopping-bag"></i> Buy Now — ₹<%= book.price %>
+              </button>
+            <% } %>
+          <% } %>
+        </div>
+
+        <!-- Meta Pills -->
+        <div class="detail-meta-pills" style="margin-top:1.25rem">
+          <div class="detail-meta-pill rating">
+            <i class="fas fa-star"></i> <%= book.rating %> / 5.0
+          </div>
+          <div class="detail-meta-pill">
+            <i class="fas fa-file-alt"></i> <%= book.pages %> pages
+          </div>
+          <div class="detail-meta-pill">
+            <i class="fas fa-tag"></i> ₹<%= book.price %>
+          </div>
+          <div class="detail-meta-pill">
+            <i class="fas fa-globe"></i> <%= book.origin %>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT — Info + Tabs -->
+      <div>
+        <div class="book-cat" style="margin-bottom:8px"><%= book.category %></div>
+        <h1 class="detail-book-title"><%= book.title %></h1>
+        <p class="detail-book-author">by <span><%= book.author %></span></p>
+
+        <!-- TABS -->
+        <div class="detail-tabs">
+          <div class="detail-tab active" data-tab="about">About</div>
+          <div class="detail-tab" data-tab="index">Index</div>
+          <div class="detail-tab" data-tab="preview">Preview</div>
+        </div>
+
+        <!-- ABOUT TAB -->
+        <div class="detail-tab-content active" id="tab-about">
+          <p class="detail-description"><%= book.description %></p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem">
+            <div style="background:var(--ink-2);border:1px solid var(--border);border-radius:var(--r);padding:1rem">
+              <div style="font-size:.7rem;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Author</div>
+              <div style="font-family:'Fraunces',serif;color:var(--cream);font-size:.95rem"><%= book.author %></div>
+            </div>
+            <div style="background:var(--ink-2);border:1px solid var(--border);border-radius:var(--r);padding:1rem">
+              <div style="font-size:.7rem;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Origin</div>
+              <div style="font-family:'Fraunces',serif;color:var(--cream);font-size:.95rem"><%= book.origin %></div>
+            </div>
+            <div style="background:var(--ink-2);border:1px solid var(--border);border-radius:var(--r);padding:1rem">
+              <div style="font-size:.7rem;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Pages</div>
+              <div style="font-family:'Fraunces',serif;color:var(--cream);font-size:.95rem"><%= book.pages %></div>
+            </div>
+            <div style="background:var(--ink-2);border:1px solid var(--border);border-radius:var(--r);padding:1rem">
+              <div style="font-size:.7rem;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Genre</div>
+              <div style="font-family:'Fraunces',serif;color:var(--cream);font-size:.95rem"><%= book.category %></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INDEX TAB -->
+        <div class="detail-tab-content" id="tab-index">
+          <p style="color:var(--text-2);font-size:.875rem;margin-bottom:1.25rem">Table of Contents — <%= book.pages %> pages across the following chapters:</p>
+          <%
+            const lines = book.fullText.split('\n\n');
+            const chapters = lines.filter(l =>
+              l.match(/^(Chapter|Part|Prologue|Introduction|Section|Song|Book|Act)/i)
+            );
+            const chapterList = chapters.length > 0 ? chapters : ['Introduction', 'Part One', 'Part Two', 'Part Three', 'Conclusion'];
+            let pageNum = 1;
+          %>
+          <ul class="book-index">
+            <% chapterList.slice(0,12).forEach((ch, i) => {
+              const pg = pageNum;
+              pageNum += Math.floor(book.pages / Math.max(chapterList.length, 1)) + Math.floor(Math.random()*8);
+            %>
+            <li>
+              <span class="idx-num"><%= (i+1).toString().padStart(2,'0') %></span>
+              <span class="idx-title"><%= ch.split('\n')[0].trim() %></span>
+              <span class="idx-pg">p.<%= Math.min(pg, book.pages) %></span>
+            </li>
+            <% }) %>
+          </ul>
+          <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border)">
+            <a href="/books/<%= book.id %>/read" style="color:var(--gold);font-size:.875rem">
+              <i class="fas fa-book-reader me-1"></i> Read full book to access all chapters →
+            </a>
+          </div>
+        </div>
+
+        <!-- PREVIEW TAB -->
+        <div class="detail-tab-content" id="tab-preview">
+          <div class="preview-text-block">
+            <div class="preview-quote-mark">"</div>
+            <p><%= book.preview %></p>
+            <div class="preview-fade"></div>
+          </div>
+          <div style="margin-top:1rem;display:flex;align-items:center;gap:1rem">
+            <a href="/books/<%= book.id %>/read" class="btn-primary-gold" style="padding:10px 20px;font-size:.85rem">
+              <i class="fas fa-book-open"></i> Continue reading
+            </a>
+            <span style="color:var(--text-3);font-size:.8rem">Full text available online — free</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,241 @@
+<%- include('partials/header') %>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-noise"></div>
+  <div class="hero-grid-lines"></div>
+  <div class="container" style="display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center">
+
+    <div>
+      <div class="hero-eyebrow">
+        <span class="hero-eyebrow-dot"></span>
+        48 Books · Indian & Foreign Literature
+      </div>
+      <h1 class="hero-title">
+        Read the books<br>that <em>shaped</em><br>the world
+      </h1>
+      <p class="hero-sub">From Tagore's Gitanjali to Orwell's 1984 — read any book free online, or own it forever. Your personal library, beautifully organised.</p>
+      <div class="hero-actions">
+        <a href="/books" class="btn-primary-gold">
+          <i class="fas fa-compass"></i> Explore Library
+        </a>
+        <% if (!user) { %>
+          <a href="/register" class="btn-ghost">
+            <i class="fas fa-user-plus"></i> Start for free
+          </a>
+        <% } else { %>
+          <a href="/user/dashboard" class="btn-ghost">
+            <i class="fas fa-layer-group"></i> My Library
+          </a>
+        <% } %>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <div class="hero-stat-num">48</div>
+          <div class="hero-stat-label">Curated Books</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">25</div>
+          <div class="hero-stat-label">Indian Authors</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">15</div>
+          <div class="hero-stat-label">Genres</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">Free</div>
+          <div class="hero-stat-label">To Read</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-showcase d-none d-lg-block">
+      <% for(let i=0;i<Math.min(5,featured.length);i++) { %>
+        <div class="showcase-card sc-<%= i+1 %>">
+          <img src="<%= featured[i].cover %>" alt="<%= featured[i].title %>">
+        </div>
+      <% } %>
+    </div>
+
+  </div>
+</section>
+
+<!-- AUTHOR MARQUEE -->
+<div class="marquee-wrap" style="background:var(--ink-2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="marquee-track">
+    <% const authors = ['Rabindranath Tagore','Munshi Premchand','R.K. Narayan','Arundhati Roy','Salman Rushdie','Aravind Adiga','A.P.J. Abdul Kalam','Amish Tripathi','Chetan Bhagat','George Orwell','J.R.R. Tolkien','Jane Austen','Leo Tolstoy','Dostoevsky','Gabriel García Márquez','Ernest Hemingway','Aldous Huxley','Jhumpa Lahiri','Khushwant Singh','Vikram Seth'] %>
+    <% for(let r=0;r<2;r++) { %>
+      <% authors.forEach(a => { %>
+        <span class="marquee-item"><%= a %><span class="marquee-dot">·</span></span>
+      <% }) %>
+    <% } %>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="features-strip">
+  <div class="container">
+    <div class="features-grid">
+      <div class="feature-item reveal">
+        <div class="feature-icon"><i class="fas fa-book-open"></i></div>
+        <div>
+          <div class="feature-title">Read Online Free</div>
+          <div class="feature-desc">Every book in the library is available to read online — no purchase needed.</div>
+        </div>
+      </div>
+      <div class="feature-item reveal reveal-delay-1">
+        <div class="feature-icon"><i class="fas fa-bookmark"></i></div>
+        <div>
+          <div class="feature-title">Reading History</div>
+          <div class="feature-desc">Your reading progress and history tracked automatically across sessions.</div>
+        </div>
+      </div>
+      <div class="feature-item reveal reveal-delay-2">
+        <div class="feature-icon"><i class="fas fa-shopping-bag"></i></div>
+        <div>
+          <div class="feature-title">Buy to Own</div>
+          <div class="feature-desc">Purchase books starting at ₹199 and add them to your permanent library.</div>
+        </div>
+      </div>
+      <div class="feature-item reveal reveal-delay-3">
+        <div class="feature-icon"><i class="fas fa-flag"></i></div>
+        <div>
+          <div class="feature-title">Indian & Foreign</div>
+          <div class="feature-desc">25 Indian classics alongside 23 world masterpieces — all in one place.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED BOOKS -->
+<section class="section section-dark">
+  <div class="container">
+    <div class="section-head reveal">
+      <div>
+        <div class="section-label">Handpicked for you</div>
+        <h2 class="section-title">Bestsellers & Featured</h2>
+      </div>
+      <a href="/books" class="see-all-link">View full library <i class="fas fa-arrow-right"></i></a>
+    </div>
+    <div class="books-grid reveal">
+      <% featured.forEach((book, i) => { %>
+      <div class="book-card">
+        <div class="book-cover-wrap">
+          <img src="<%= book.cover %>" alt="<%= book.title %>" loading="lazy">
+          <div class="book-hover-overlay">
+            <a href="/books/<%= book.id %>/read" class="btn-hover-read"><i class="fas fa-book-reader"></i> Read Free</a>
+            <a href="/books/<%= book.id %>"       class="btn-hover-buy"><i class="fas fa-eye"></i> Details</a>
+          </div>
+          <% if (book.bestseller) { %><span class="book-badge badge-best">Bestseller</span><% } %>
+          <span class="book-badge <%= book.origin==='Indian'?'badge-origin-in':'badge-origin-fo' %>" style="top:auto;bottom:10px;left:10px">
+            <%= book.origin==='Indian' ? '🇮🇳' : '🌍' %>
+          </span>
+        </div>
+        <div class="book-info">
+          <div class="book-cat"><%= book.category %></div>
+          <div class="book-name"><a href="/books/<%= book.id %>"><%= book.title %></a></div>
+          <div class="book-auth"><%= book.author %></div>
+          <div class="book-foot">
+            <span class="book-price">₹<%= book.price %></span>
+            <span class="book-rating"><i class="fas fa-star"></i> <%= book.rating %></span>
+          </div>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+</section>
+
+<!-- INDIAN AUTHORS -->
+<section class="section section-surface">
+  <div class="container">
+    <div class="section-head reveal">
+      <div>
+        <div class="section-label">Desi Literature</div>
+        <h2 class="section-title">Famous Indian Authors</h2>
+        <p style="color:var(--text-3);font-size:.875rem;margin-top:.35rem">Tagore · Premchand · Narayan · Rushdie · Roy · Adiga · Kalam · Amish</p>
+      </div>
+      <a href="/books?origin=Indian" class="see-all-link">All Indian books <i class="fas fa-arrow-right"></i></a>
+    </div>
+    <div class="books-grid reveal">
+      <% books.filter(b=>b.origin==='Indian').slice(0,8).forEach(book => { %>
+      <div class="book-card">
+        <div class="book-cover-wrap">
+          <img src="<%= book.cover %>" alt="<%= book.title %>" loading="lazy">
+          <div class="book-hover-overlay">
+            <a href="/books/<%= book.id %>/read" class="btn-hover-read"><i class="fas fa-book-reader"></i> Read Free</a>
+            <a href="/books/<%= book.id %>"       class="btn-hover-buy"><i class="fas fa-eye"></i> Details</a>
+          </div>
+          <span class="book-badge badge-origin-in" style="top:auto;bottom:10px;left:10px">🇮🇳</span>
+        </div>
+        <div class="book-info">
+          <div class="book-cat"><%= book.category %></div>
+          <div class="book-name"><a href="/books/<%= book.id %>"><%= book.title %></a></div>
+          <div class="book-auth"><%= book.author %></div>
+          <div class="book-foot">
+            <span class="book-price">₹<%= book.price %></span>
+            <span class="book-rating"><i class="fas fa-star"></i> <%= book.rating %></span>
+          </div>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+</section>
+
+<!-- WORLD CLASSICS -->
+<section class="section section-dark">
+  <div class="container">
+    <div class="section-head reveal">
+      <div>
+        <div class="section-label">World Literature</div>
+        <h2 class="section-title">Foreign Classics & Novels</h2>
+        <p style="color:var(--text-3);font-size:.875rem;margin-top:.35rem">Tolstoy · Austen · Hemingway · Orwell · Rowling · Márquez · Tolkien</p>
+      </div>
+      <a href="/books?origin=Foreign" class="see-all-link">All foreign books <i class="fas fa-arrow-right"></i></a>
+    </div>
+    <div class="books-grid reveal">
+      <% books.filter(b=>b.origin==='Foreign').slice(0,8).forEach(book => { %>
+      <div class="book-card">
+        <div class="book-cover-wrap">
+          <img src="<%= book.cover %>" alt="<%= book.title %>" loading="lazy">
+          <div class="book-hover-overlay">
+            <a href="/books/<%= book.id %>/read" class="btn-hover-read"><i class="fas fa-book-reader"></i> Read Free</a>
+            <a href="/books/<%= book.id %>"       class="btn-hover-buy"><i class="fas fa-eye"></i> Details</a>
+          </div>
+          <span class="book-badge badge-origin-fo" style="top:auto;bottom:10px;left:10px">🌍</span>
+        </div>
+        <div class="book-info">
+          <div class="book-cat"><%= book.category %></div>
+          <div class="book-name"><a href="/books/<%= book.id %>"><%= book.title %></a></div>
+          <div class="book-auth"><%= book.author %></div>
+          <div class="book-foot">
+            <span class="book-price">₹<%= book.price %></span>
+            <span class="book-rating"><i class="fas fa-star"></i> <%= book.rating %></span>
+          </div>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<% if (!user) { %>
+<section class="section section-surface" style="text-align:center">
+  <div class="container" style="max-width:640px">
+    <div class="reveal">
+      <div class="section-label" style="justify-content:center">Start reading today</div>
+      <h2 class="section-title" style="font-size:clamp(2rem,4vw,3rem);margin-bottom:1rem">Your library awaits</h2>
+      <p style="color:var(--text-2);margin-bottom:2rem;font-size:1rem">Join thousands of readers. Create a free account, read anything immediately, and build your personal collection.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="/register" class="btn-primary-gold" style="font-size:1rem;padding:14px 32px">Create free account</a>
+        <a href="/books"    class="btn-ghost"        style="font-size:1rem;padding:14px 32px">Browse library</a>
+      </div>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<%- include('partials/footer') %>

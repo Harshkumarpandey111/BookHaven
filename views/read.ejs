@@ -1,0 +1,72 @@
+<%- include('partials/header') %>
+
+<div id="readerBody" class="reader-page">
+  <!-- Toolbar -->
+  <div class="reader-toolbar">
+    <div id="readerProgress" class="reader-progress-bar"></div>
+    <a href="/books/<%= book.id %>" class="reader-back">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+    <div class="reader-title-info">
+      <div class="reader-book-name"><%= book.title %></div>
+      <div class="reader-book-auth">by <%= book.author %></div>
+    </div>
+    <div class="reader-controls">
+      <span id="readerPct" class="reader-pct">0%</span>
+      <button class="reader-btn" id="btnFontDown" title="Decrease font">A−</button>
+      <button class="reader-btn" id="btnFontUp"   title="Increase font">A+</button>
+      <button class="reader-btn" id="btnTheme"    title="Toggle theme">☀</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="reader-body">
+
+    <!-- Book header -->
+    <div class="reader-book-header">
+      <img src="<%= book.cover %>" alt="<%= book.title %>" class="reader-thumb">
+      <div class="reader-book-info">
+        <h2><%= book.title %></h2>
+        <p><%= book.author %></p>
+        <div class="reader-meta-tags">
+          <span class="reader-tag"><%= book.category %></span>
+          <span class="reader-tag"><%= book.pages %> pages</span>
+          <span class="reader-tag"><%= book.origin %></span>
+          <span class="reader-tag">⭐ <%= book.rating %></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Text -->
+    <div class="reader-content" id="readerText">
+      <%
+        const paragraphs = book.fullText.split('\n\n').filter(p => p.trim());
+      %>
+      <% paragraphs.forEach(para => { %>
+        <% if (para.match(/^(Chapter|Part|Prologue|Introduction|Section|Song|Book|Act)/i)) { %>
+          <div class="reader-chapter"><%= para.split('\n')[0].trim() %></div>
+        <% } else if (para.trim()) { %>
+          <p><%= para.trim() %></p>
+        <% } %>
+      <% }) %>
+    </div>
+
+    <!-- End CTA -->
+    <div class="reader-end-cta">
+      <div style="font-size:2.5rem;margin-bottom:1rem">📖</div>
+      <h3>You're reading a preview</h3>
+      <p>This is a curated excerpt. Purchase the full book to read the complete work and add it to your permanent library.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="/books/<%= book.id %>" class="btn-primary-gold">
+          <i class="fas fa-shopping-bag"></i> Buy Full Book — ₹<%= book.price %>
+        </a>
+        <a href="/books" class="btn-ghost">
+          <i class="fas fa-compass"></i> Explore More
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<%- include('partials/footer') %>
