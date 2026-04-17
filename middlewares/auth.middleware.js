@@ -23,11 +23,13 @@ async function optionalAuth(req, _res, next) {
     const user = await User.findById(payload.id).select('-password');
     if (!user) return next();
 
+    const role = String(user.role || 'user').toLowerCase();
+
     req.user = {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
-      role: user.role
+      role
     };
     return next();
   } catch (_err) {
@@ -52,11 +54,13 @@ async function protect(req, res, next) {
       return res.redirect('/login');
     }
 
+    const role = String(user.role || 'user').toLowerCase();
+
     req.user = {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
-      role: user.role
+      role
     };
 
     return next();
@@ -72,7 +76,9 @@ function authorize(...roles) {
     if (!req.user) {
       return next(new AppError('Authentication required', 401));
     }
-    if (!roles.includes(req.user.role)) {
+    const normalizedRole = String(req.user.role || '').toLowerCase();
+    const allowedRoles = roles.map((role) => String(role || '').toLowerCase());
+    if (!allowedRoles.includes(normalizedRole)) {
       return next(new AppError('You do not have permission to access this resource', 403));
     }
     return next();

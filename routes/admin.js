@@ -34,13 +34,18 @@ router.get('/dashboard', protect, authorize('admin'), (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const [books, users, totalBooks, totalUsers, totalAdmins] = await Promise.all([
+    const [books, rawUsers, totalBooks, totalUsers, totalAdmins] = await Promise.all([
       Book.find({}).sort({ id: 1 }).limit(60),
       User.find({}).sort({ createdAt: -1 }).limit(80),
       Book.countDocuments(),
       User.countDocuments(),
       User.countDocuments({ role: 'admin' })
     ]);
+
+    const users = rawUsers.map((user) => ({
+      ...user.toObject(),
+      role: String(user.role || 'user').toLowerCase()
+    }));
 
     return res.render('admin/dashboard', {
       title: 'Admin Dashboard',
