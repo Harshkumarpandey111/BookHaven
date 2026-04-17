@@ -1,0 +1,490 @@
+BOOKHAVEN PROJECT - FULL LOGIC EXPLANATION (VIVA GUIDE)
+=====================================================
+
+Project Type
+------------
+This project is a full-stack online bookstore application built with:
+- Node.js + Express.js (backend)
+- MongoDB + Mongoose (database)
+- EJS (server-side rendered frontend)
+- Razorpay (payment gateway)
+- JWT Authentication (cookie or bearer token)
+
+It follows an MVC-style structure with service and middleware layers:
+- Routes: define endpoints and flow entry points
+- Controllers/Services: business logic and reusable operations
+- Models: database schema and constraints
+- Views: UI templates (EJS)
+- Public JS: client-side interactions (AJAX, checkout, toasts)
+- Middlewares: auth, rate limit, validation, global error handling
+
+
+1) APP STARTUP FLOW
+===================
+When the server starts:
+1. app.js loads environment variables and initializes Express.
+2. MongoDB connection is established through config/db.js.
+3. Security middleware is enabled:
+   - helmet
+   - morgan logger
+   - cookie parser
+   - rate limiter for /api
+4. Static and body parsing middleware is enabled.
+5. Session is initialized (used for flash messages).
+6. optionalAuth middleware tries to read JWT and attach req.user if token is valid.
+7. Global locals are added for all EJS views:
+   - user
+   - success flash
+   - error flash
+8. Route modules are mounted:
+   - / (auth web routes)
+   - /books
+   - /user
+   - /payments
+   - /admin
+   - /wishlist
+   - / (reviews routes)
+   - /api/auth
+9. Home page route fetches books and renders featured sections.
+10. notFound and globalError middleware handle unhandled routes/errors.
+
+Why this architecture:
+- Keeps startup centralized.
+- Separates route registration from business logic.
+- Guarantees common middlewares run before feature routes.
+
+
+2) AUTHENTICATION LOGIC
+=======================
+Authentication is JWT-based.
+
+Main Components:
+- routes/auth.js and routes/api/auth.js
+- controllers/auth.controller.js
+- services/auth.service.js
+- middlewares/auth.middleware.js
+- models/User.js
+- utils/jwt.js
+
+Register Logic:
+1. Request hits register route.
+2. authLimiter prevents brute-force attempts.
+3. registerValidator checks name/email/password rules.
+4. validateRequest returns 400 if any validation fails.
+5. authService.registerUser checks if email already exists.
+6. If not, User.create saves new user.
+7. Password is hashed automatically by pre-save hook.
+8. Response:
+   - API: JSON success
+   - Web: flash message and redirect to login
+
+Login Logic:
+1. Request hits login route with validators and rate limit.
+2. authService.loginUser finds user by normalized email.
+3. comparePassword checks plaintext vs hashed password.
+4. If valid, signAccessToken creates JWT.
+5. Controller stores token in httpOnly cookie (accessToken).
+6. Response:
+   - API: JSON with user + token
+   - Web: flash + redirect
+
+Protect Logic:
+- protect middleware reads token from:
+  1) Authorization: Bearer <token>
+  2) Cookie accessToken
+- If invalid/missing:
+  - API gets 401 JSON
+  - Web gets flash + redirect to login
+- If valid, req.user is injected with safe fields (id, name, email, role).
+
+Authorize Logic:
+- authorize(...roles) ensures only specific roles can access route.
+- Used for admin routes.
+
+Why this logic:
+- JWT gives stateless auth.
+- Cookie httpOnly improves security against JS token theft.
+- Middleware keeps auth checks reusable and consistent.
+
+
+3) USER MODEL AND DATA STORAGE LOGIC
+====================================
+User model stores key arrays directly:
+- readBooks: books user has opened/read
+- purchasedBooks: books user owns after successful payment
+- cart: selected books before checkout
+- readingProgress: references ReadingProgress docs
+
+Password logic:
+- pre('save') hashes password only when modified.
+- comparePassword method verifies login credentials.
+
+Why this design:
+- Fast access to user-owned and cart states.
+- Easy checks like includes(bookId) for cart/purchase conditions.
+
+
+4) BOOK BROWSING AND FILTER LOGIC
+=================================
+Main route: GET /books
+
+Query parameters supported:
+- category
+- search
+- origin
+- availability (free/paid)
+- minRating
+- sort
+- page, perPage
+
+How logic works:
+1. Parse pagination values with safe bounds.
+2. Build dynamic Mongo query object.
+3. Apply filters only if query params exist.
+4. Build sort map and choose sort mode.
+5. Run 3 parallel DB operations:
+   - filtered books with skip/limit
+   - all categories
+   - total count for pagination
+6. If logged in, fetch wishlist state for books shown on page.
+7. Render books.ejs with books + filters + pagination metadata.
+
+Why this logic:
+- Dynamic filtering without many separate endpoints.
+- Pagination prevents heavy response for large catalogs.
+- Parallel queries improve performance.
+
+
+5) BOOK DETAIL PAGE LOGIC
+=========================
+Main route: GET /books/:id
+
+Flow:
+1. Find book by numeric id.
+2. If logged in, fetch in parallel:
+   - userData (cart, purchased, read arrays)
+   - reading progress for this book
+   - wishlist entry for this book
+3. Fetch all reviews and populate reviewer names.
+4. Compute review stats (count and average).
+5. Fetch current user review (if exists).
+6. Render detail page with all data.
+
+UI states on detail page:
+- If not logged in: prompt login buttons.
+- If purchased: show In Your Library (disabled).
+- If in cart: show View in Cart link.
+- Else: show Buy Now button (calls addToCart).
+- Read button always available; full text depends on purchase.
+
+Why this logic:
+- One page shows full commerce + social + reading context.
+- User-specific UI avoids invalid actions.
+
+
+6) READ PREVIEW + PROGRESS SAVE LOGIC
+=====================================
+Routes:
+- GET /books/:id/read
+- GET /books/:id/progress
+- POST /books/:id/progress
+
+Read Route Logic:
+1. Requires login (protect).
+2. Loads book and user.
+3. Checks hasFullAccess = purchasedBooks includes bookId.
+4. If purchased => readableText = fullText.
+5. Else => readableText = getPreviewContent(fullText, 12%).
+6. Adds bookId into readBooks via $addToSet (no duplicates).
+7. Renders reader page with text and saved progress values.
+
+Progress Save Logic:
+1. Receives progressPercent and scrollPosition.
+2. Validates user/book exists.
+3. Determines progressLimit:
+   - purchased user => 100
+   - non-purchased => preview percent (12)
+4. Uses clampProgress to enforce 0..100 numeric value.
+5. Uses Math.min(clamped, limit) to cap progress.
+6. Upserts ReadingProgress document for user+book.
+7. Updates user with $addToSet:
+   - readBooks includes bookId
+   - readingProgress includes progress doc id
+
+Why this logic:
+- Prevents non-purchasers from claiming full progress.
+- Upsert avoids duplicate progress records.
+- Unique index (user, bookId) enforces one progress record per book/user.
+
+
+7) CART LOGIC (MOST IMPORTANT VIVA FLOW)
+========================================
+Main flow from click to cart:
+
+Step A: User clicks Buy Now on detail page
+- Button calls addToCart(bookId, btn) in public/js/main.js.
+
+Step B: Client sends AJAX request
+- addToCart sends POST to /books/:id/buy.
+- Button enters loading state for UX.
+
+Step C: Server buy route runs
+- Route: POST /books/:id/buy (protected).
+- Logic checks:
+  1) Book exists
+  2) User exists
+  3) Not already purchased
+  4) Not already in cart
+- If valid, updates user with $push cart: book.id
+- Returns JSON success/failure message.
+
+Step D: Client handles response
+- On success:
+  - Button text updates to Added to Cart
+  - Success toast shown
+  - Redirect to dashboard
+- On failure:
+  - Original button restored
+  - Error toast shown
+
+Why these checks:
+- avoid duplicate cart entries
+- avoid adding already owned books
+- avoid invalid book/user cases
+
+Note:
+- Cart is stored in User.cart array (not separate Cart model).
+
+
+8) DASHBOARD AND CART DISPLAY LOGIC
+===================================
+Main route: GET /user/dashboard
+
+Flow:
+1. Requires login.
+2. Loads user.
+3. Fetches in parallel:
+   - read books (preview limit)
+   - purchased books (preview limit)
+   - cart books (full)
+   - recent progress docs
+   - wishlist entries
+4. Builds readingProgressMap for fast lookup in EJS.
+5. Computes cart total using reduce(sum + price).
+6. Renders dashboard with section counts and card lists.
+
+Cart panel actions:
+- Remove item: POST /user/cart/remove/:id with $pull.
+- Checkout button includes cart book IDs in data-book-ids.
+
+Why this logic:
+- Dashboard acts as user control center.
+- Keeps list previews fast and shows totals at a glance.
+
+
+9) CHECKOUT + PAYMENT VERIFICATION LOGIC
+========================================
+Frontend function: startCheckout(btn)
+Routes:
+- POST /payments/create-order
+- POST /payments/verify
+
+Create-order Logic:
+1. Requires login.
+2. Reads bookIds from request body; if empty, fallback to user.cart.
+3. De-duplicates using Set.
+4. Removes already purchased ids.
+5. Fetches valid books and computes total amount in paise.
+6. Creates internal Order document with status='created'.
+7. Calls Razorpay orders.create via payment service.
+8. Saves razorpayOrderId into internal order.
+9. Returns order info + key to frontend.
+
+Frontend Razorpay Flow:
+1. Opens Razorpay checkout modal.
+2. On success callback, sends payment ids/signature to /payments/verify.
+
+Verify Logic:
+1. Requires login.
+2. Validates required razorpay fields.
+3. Finds order by razorpayOrderId + user id.
+4. If already paid => idempotent success.
+5. Verifies HMAC signature server-side.
+6. If invalid => order status failed.
+7. If valid:
+   - set order status paid
+   - save payment id/signature
+   - set paidAt timestamp
+   - update user:
+     - $addToSet purchasedBooks with $each order books
+     - $pull cart for those books
+8. Returns success and frontend redirects to dashboard.
+
+Why this logic:
+- Never trust client-only payment success.
+- Signature verification is the security guarantee.
+- Ownership is granted only after verified payment.
+
+
+10) WISHLIST LOGIC
+==================
+Routes:
+- GET /wishlist
+- POST /wishlist/toggle/:bookId
+- POST /wishlist/remove/:bookId
+
+Toggle flow:
+1. Check book exists.
+2. If wishlist entry exists => delete (remove action).
+3. Else create new entry (added action).
+4. Return JSON action so frontend updates heart state.
+
+Data integrity:
+- Unique index on (user, bookId) prevents duplicates.
+
+Why this logic:
+- One endpoint cleanly supports add and remove behavior.
+
+
+11) REVIEW LOGIC
+================
+Routes:
+- POST /books/:id/reviews
+- POST /books/:id/reviews/:reviewId/delete
+
+Create/Update review logic:
+1. Validate book and user exist.
+2. Validate rating range 1..5.
+3. Validate comment minimum length.
+4. findOneAndUpdate with upsert on (user, bookId).
+5. Returns JSON for API or redirect+flash for web.
+
+Delete logic:
+- User can delete only own review by checking user id + review id match.
+
+Data integrity:
+- Unique index (user, bookId) ensures one review per user per book.
+
+Why this logic:
+- Allows editing same review instead of duplicate review spam.
+
+
+12) ADMIN LOGIC (RBAC)
+======================
+All admin routes are protected by:
+- protect middleware
+- authorize('admin') middleware
+
+Features:
+- Admin dashboard with counts and lists.
+- Create book.
+- Edit/update book.
+- Delete book.
+- Change user role.
+- Delete user.
+
+Book delete cascade cleanup:
+- Removes book from Book collection.
+- Pulls book id from all users read/purchased/cart arrays.
+- Deletes related reading progress docs.
+- Pulls book id from all orders.
+
+Why this logic:
+- Prevents orphan references when deleting resources.
+- Keeps DB consistent after admin mutations.
+
+
+13) ERROR HANDLING AND VALIDATION LOGIC
+=======================================
+Validation:
+- express-validator rules in validators/auth.validator.js.
+- validateRequest middleware converts validation errors into AppError.
+
+Error architecture:
+- asyncHandler wraps async routes and forwards errors automatically.
+- AppError marks operational errors with status code.
+- globalErrorHandler:
+  - API -> JSON error
+  - Web -> flash + redirect
+
+Why this logic:
+- Centralized error response format.
+- Cleaner route code and better maintainability.
+
+
+14) SECURITY AND STABILITY LAYERS
+=================================
+Implemented measures:
+- Helmet headers.
+- API and auth rate limits.
+- Password hashing with bcrypt.
+- JWT token verification and role checks.
+- Secure cookie options (httpOnly, sameSite, secure in production).
+- Session only for flash UX, not auth state.
+
+Database stability:
+- Mongoose schema validation.
+- Unique indexes for critical constraints:
+  - wishlist (user, book)
+  - review (user, book)
+  - readingProgress (user, book)
+
+
+15) COMPLETE END-TO-END EXAMPLE (BOOK TO OWNERSHIP)
+====================================================
+Scenario: User opens a book and buys it.
+
+1. User opens /books/:id detail page.
+2. Clicks Buy Now.
+3. addToCart() sends POST /books/:id/buy.
+4. Server validates and adds id to user.cart.
+5. User opens dashboard cart panel.
+6. startCheckout() sends /payments/create-order with cart book ids.
+7. Server creates internal order + Razorpay order.
+8. Razorpay popup completes payment.
+9. Frontend sends payment response to /payments/verify.
+10. Server verifies signature.
+11. If valid:
+    - order status -> paid
+    - user.purchasedBooks add books
+    - user.cart remove books
+12. Book now appears in My Library and user has full read access.
+
+That is the exact final business logic chain for purchase.
+
+
+16) WHAT TO SAY IF TEACHER ASKS "WHY THIS LOGIC?"
+==================================================
+Use these short justifications:
+
+- "We split route, service, model, middleware so each layer has one responsibility and code is maintainable."
+- "Cart and purchased checks prevent invalid duplicate states."
+- "Payment verification is server-side with HMAC signature so fake frontend success cannot unlock books."
+- "Unique DB indexes enforce one record where needed, even if multiple requests come together."
+- "Preview reading logic is capped for non-purchased users to protect paid content."
+- "JWT middleware centralizes authentication and role authorization for secure access control."
+
+
+17) QUICK FILE MAP FOR VIVA
+===========================
+- App bootstrap: app.js
+- DB connection: config/db.js
+- Auth routes: routes/auth.js, routes/api/auth.js
+- Auth logic: controllers/auth.controller.js, services/auth.service.js
+- Auth middleware: middlewares/auth.middleware.js
+- Books + cart + reader: routes/books.js
+- User dashboard/cart: routes/user.js
+- Payment flow: routes/payment.js, services/payment.service.js
+- Wishlist: routes/wishlist.js, models/Wishlist.js
+- Reviews: routes/reviews.js, models/Review.js
+- Admin: routes/admin.js
+- User schema/cart/purchase arrays: models/User.js
+- Order schema: models/Order.js
+- Reader progress schema: models/ReadingProgress.js
+- Frontend cart/checkout/wishlist JS: public/js/main.js
+- Detail page buy button wiring: views/book-detail.ejs
+- Dashboard cart checkout UI: views/dashboard.ejs
+
+
+END OF DOCUMENT
+===============

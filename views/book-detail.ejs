@@ -32,10 +32,11 @@
             <% const alreadyRead  = userData && userData.readBooks      && userData.readBooks.includes(book.id) %>
             <% const alreadyBought= userData && userData.purchasedBooks && userData.purchasedBooks.includes(book.id) %>
             <% const inCart       = userData && userData.cart           && userData.cart.includes(book.id) %>
+            <% const progressPct  = readingProgress && readingProgress.progressPercent ? readingProgress.progressPercent : 0 %>
 
             <a href="/books/<%= book.id %>/read" class="btn-read-full">
               <i class="fas fa-<%= alreadyRead ? 'book-open' : 'book-reader' %>"></i>
-              <%= alreadyRead ? 'Continue Reading' : 'Read Online — Free' %>
+              <%= alreadyRead ? `Continue Reading (${progressPct}%)` : `Read Free Preview (${previewPercent}%)` %>
             </a>
 
             <% if (alreadyBought) { %>
@@ -51,6 +52,11 @@
                 <i class="fas fa-shopping-bag"></i> Buy Now — ₹<%= book.price %>
               </button>
             <% } %>
+
+            <button class="btn-buy-full" type="button" data-wishlist-book="<%= book.id %>" onclick="toggleWishlist(<%= book.id %>, this)">
+              <i class="fas fa-heart <%= wishlistEntry ? 'wishlist-active' : '' %>"></i>
+              <%= wishlistEntry ? 'Saved to Wishlist' : 'Save to Wishlist' %>
+            </button>
           <% } %>
         </div>
 
@@ -82,6 +88,7 @@
           <div class="detail-tab active" data-tab="about">About</div>
           <div class="detail-tab" data-tab="index">Index</div>
           <div class="detail-tab" data-tab="preview">Preview</div>
+          <div class="detail-tab" data-tab="reviews">Reviews (<%= reviewStats.count %>)</div>
         </div>
 
         <!-- ABOUT TAB -->
@@ -133,7 +140,7 @@
           </ul>
           <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border)">
             <a href="/books/<%= book.id %>/read" style="color:var(--gold);font-size:.875rem">
-              <i class="fas fa-book-reader me-1"></i> Read full book to access all chapters →
+              <i class="fas fa-book-reader me-1"></i> Open preview reader (<%= previewPercent %>% free) →
             </a>
           </div>
         </div>
@@ -149,7 +156,76 @@
             <a href="/books/<%= book.id %>/read" class="btn-primary-gold" style="padding:10px 20px;font-size:.85rem">
               <i class="fas fa-book-open"></i> Continue reading
             </a>
-            <span style="color:var(--text-3);font-size:.8rem">Full text available online — free</span>
+            <span style="color:var(--text-3);font-size:.8rem">Only <%= previewPercent %>% is free. Full text unlocks after purchase.</span>
+          </div>
+        </div>
+
+        <!-- REVIEWS TAB -->
+        <div class="detail-tab-content" id="tab-reviews">
+          <div class="reviews-summary">
+            <div class="reviews-summary-score"><%= reviewStats.average.toFixed ? reviewStats.average.toFixed(1) : reviewStats.average %></div>
+            <div>
+              <div class="reviews-summary-label">Average rating</div>
+              <div class="reviews-summary-sub"><%= reviewStats.count %> review<%= reviewStats.count === 1 ? '' : 's' %></div>
+            </div>
+          </div>
+
+          <% if (user) { %>
+            <form action="/books/<%= book.id %>/reviews" method="POST" class="review-form">
+              <div class="review-form-row">
+                <label>
+                  Rating
+                  <select name="rating" required>
+                    <option value="5" <%= userReview && userReview.rating === 5 ? 'selected' : '' %>>5 - Excellent</option>
+                    <option value="4" <%= userReview && userReview.rating === 4 ? 'selected' : '' %>>4 - Good</option>
+                    <option value="3" <%= userReview && userReview.rating === 3 ? 'selected' : '' %>>3 - Average</option>
+                    <option value="2" <%= userReview && userReview.rating === 2 ? 'selected' : '' %>>2 - Poor</option>
+                    <option value="1" <%= userReview && userReview.rating === 1 ? 'selected' : '' %>>1 - Bad</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                Your review
+                <textarea name="comment" rows="4" placeholder="Share your thoughts about this book" required><%= userReview ? userReview.comment : '' %></textarea>
+              </label>
+              <button type="submit" class="btn-primary-gold">
+                <i class="fas fa-paper-plane"></i> <%= userReview ? 'Update Review' : 'Post Review' %>
+              </button>
+            </form>
+          <% } else { %>
+            <div class="empty-state" style="margin-bottom:1rem">
+              <div class="empty-state-icon">✍️</div>
+              <h4>Sign in to review</h4>
+              <p>Share your opinion and help other readers decide.</p>
+            </div>
+          <% } %>
+
+          <div class="review-list">
+            <% if (reviews.length === 0) { %>
+              <div class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <h4>No reviews yet</h4>
+                <p>Be the first to review this book.</p>
+              </div>
+            <% } else { %>
+              <% reviews.forEach((review) => { %>
+                <div class="review-card">
+                  <div class="review-card-head">
+                    <div>
+                      <div class="review-author"><%= review.user && review.user.name ? review.user.name : 'Reader' %></div>
+                      <div class="review-date"><%= review.createdAt.toLocaleDateString() %></div>
+                    </div>
+                    <div class="review-stars">⭐ <%= review.rating %>/5</div>
+                  </div>
+                  <p class="review-comment"><%= review.comment %></p>
+                  <% if (userReview && review._id.toString() === userReview._id.toString()) { %>
+                    <form action="/books/<%= book.id %>/reviews/<%= review._id %>/delete" method="POST" style="margin-top:.75rem">
+                      <button type="submit" class="admin-link admin-link-danger" onclick="return confirm('Delete your review?')">Delete review</button>
+                    </form>
+                  <% } %>
+                </div>
+              <% }) %>
+            <% } %>
           </div>
         </div>
 

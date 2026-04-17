@@ -1,6 +1,15 @@
 <%- include('partials/header') %>
 
 <div id="readerBody" class="reader-page">
+  <div
+    id="readerMeta"
+    data-book-id="<%= book.id %>"
+    data-has-full-access="<%= hasFullAccess ? '1' : '0' %>"
+    data-preview-percent="<%= previewPercent %>"
+    data-initial-progress="<%= progressPercent %>"
+    data-initial-scroll="<%= scrollPosition %>">
+  </div>
+
   <!-- Toolbar -->
   <div class="reader-toolbar">
     <div id="readerProgress" class="reader-progress-bar"></div>
@@ -40,7 +49,7 @@
     <!-- Text -->
     <div class="reader-content" id="readerText">
       <%
-        const paragraphs = book.fullText.split('\n\n').filter(p => p.trim());
+        const paragraphs = readableText.split('\n\n').filter(p => p.trim());
       %>
       <% paragraphs.forEach(para => { %>
         <% if (para.match(/^(Chapter|Part|Prologue|Introduction|Section|Song|Book|Act)/i)) { %>
@@ -52,19 +61,21 @@
     </div>
 
     <!-- End CTA -->
-    <div class="reader-end-cta">
-      <div style="font-size:2.5rem;margin-bottom:1rem">📖</div>
-      <h3>You're reading a preview</h3>
-      <p>This is a curated excerpt. Purchase the full book to read the complete work and add it to your permanent library.</p>
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-        <a href="/books/<%= book.id %>" class="btn-primary-gold">
-          <i class="fas fa-shopping-bag"></i> Buy Full Book — ₹<%= book.price %>
-        </a>
-        <a href="/books" class="btn-ghost">
-          <i class="fas fa-compass"></i> Explore More
-        </a>
+    <% if (!hasFullAccess) { %>
+      <div class="reader-end-cta">
+        <div style="font-size:2.5rem;margin-bottom:1rem">📖</div>
+        <h3>Preview limit reached</h3>
+        <p>You can read up to <%= previewPercent %>% for free. Buy this book to unlock the complete content and continue from where you stopped.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <a href="/books/<%= book.id %>" class="btn-primary-gold">
+            <i class="fas fa-lock-open"></i> Unlock Full Book — ₹<%= book.price %>
+          </a>
+          <a href="/books" class="btn-ghost">
+            <i class="fas fa-compass"></i> Explore More
+          </a>
+        </div>
       </div>
-    </div>
+    <% } %>
 
   </div>
 </div>

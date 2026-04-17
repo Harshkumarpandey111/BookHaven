@@ -1,0 +1,46 @@
+<%- include('partials/header') %>
+
+<div class="mt-page">
+  <section class="section section-dark">
+    <div class="container">
+      <div class="page-hero" style="padding-top:0;margin-bottom:1rem">
+        <div class="section-label">Collection</div>
+        <h1 class="page-hero-title">My Wishlist</h1>
+        <p class="page-hero-sub"><%= entryCount %> book<%= entryCount === 1 ? '' : 's' %> saved for later.</p>
+      </div>
+
+      <% if (wishlistedBooks.length === 0) { %>
+        <div class="empty-state">
+          <div class="empty-state-icon">💖</div>
+          <h4>Your wishlist is empty</h4>
+          <p>Browse the library and save books you want to read or buy later. <a href="/books">Explore books</a></p>
+        </div>
+      <% } else { %>
+        <div class="books-grid">
+          <% wishlistedBooks.forEach(book => { %>
+            <div class="book-card reveal">
+              <div class="book-cover-wrap">
+                <img src="<%= book.cover %>" alt="<%= book.title %>" loading="lazy">
+                <div class="book-hover-overlay">
+                  <a href="/books/<%= book.id %>" class="btn-hover-buy"><i class="fas fa-eye"></i> Details</a>
+                  <button type="button" class="btn-hover-buy" onclick="toggleWishlist(<%= book.id %>, this)"><i class="fas fa-heart wishlist-active"></i> Remove</button>
+                </div>
+              </div>
+              <div class="book-info">
+                <div class="book-cat"><%= book.category %></div>
+                <div class="book-name"><a href="/books/<%= book.id %>"><%= book.title %></a></div>
+                <div class="book-auth"><%= book.author %></div>
+                <div class="book-foot">
+                  <span class="book-price">₹<%= book.price %></span>
+                  <span class="book-rating"><i class="fas fa-star"></i> <%= book.rating %></span>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </section>
+</div>
+
+<%- include('partials/footer') %>

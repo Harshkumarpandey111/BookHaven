@@ -12,7 +12,7 @@
     <nav class="dash-nav">
       <div class="dash-nav-item active" data-section="overview">
         <i class="fas fa-layer-group"></i> Overview
-        <span class="dash-nav-count"><%= readBooks.length + purchasedBooks.length %></span>
+        <span class="dash-nav-count"><%= readBooks.length + purchasedBooks.length + wishlistedBooks.length %></span>
       </div>
       <div class="dash-nav-item" data-section="cart">
         <i class="fas fa-shopping-cart"></i> Cart
@@ -25,6 +25,10 @@
       <div class="dash-nav-item" data-section="history">
         <i class="fas fa-clock"></i> Reading History
         <span class="dash-nav-count"><%= readBooks.length %></span>
+      </div>
+      <div class="dash-nav-item" data-section="wishlist">
+        <i class="fas fa-heart"></i> Wishlist
+        <span class="dash-nav-count"><%= wishlistedBooks.length %></span>
       </div>
     </nav>
 
@@ -64,6 +68,11 @@
           <div class="dash-stat-num"><%= cartBooks.length %></div>
           <div class="dash-stat-label">In cart</div>
         </div>
+        <div class="dash-stat">
+          <div class="dash-stat-icon si-cart"><i class="fas fa-heart"></i></div>
+          <div class="dash-stat-num"><%= wishlistedBooks.length %></div>
+          <div class="dash-stat-label">Wishlist</div>
+        </div>
       </div>
 
       <% if (cartBooks.length > 0) { %>
@@ -91,7 +100,7 @@
       <% } %>
 
       <!-- Recent reads -->
-      <div class="dash-section-title"><i class="fas fa-clock" style="color:var(--blue)"></i> Recently Read</div>
+      <div class="dash-section-title"><i class="fas fa-clock" style="color:var(--blue)"></i> Recently Read <span style="color:var(--text-3);font-size:.9rem"><%= totalReadBooks > 0 ? '(' + totalReadBooks + ')' : '' %></span></div>
       <% if (readBooks.length === 0) { %>
         <div class="empty-state">
           <div class="empty-state-icon">📖</div>
@@ -101,11 +110,12 @@
       <% } else { %>
         <div class="small-book-grid">
           <% readBooks.slice(0,8).forEach(book => { %>
+          <% const prog = readingProgressMap && readingProgressMap[book.id] ? readingProgressMap[book.id].progressPercent : 0 %>
           <div class="small-book-card">
             <div class="small-book-cover"><img src="<%= book.cover %>" alt="<%= book.title %>" loading="lazy"></div>
             <div class="small-book-meta">
               <div class="small-book-name"><%= book.title %></div>
-              <div class="small-book-auth"><%= book.author %></div>
+              <div class="small-book-auth"><%= book.author %> • <%= prog %>% read</div>
             </div>
             <div class="small-book-hover">
               <button class="small-book-btn" onclick="location.href='/books/<%= book.id %>/read'">Continue</button>
@@ -114,6 +124,9 @@
           </div>
           <% }) %>
         </div>
+        <% if (showReadMoreRead) { %>
+          <p style="font-size:.85rem;color:var(--text-3);margin-top:1rem">Showing 8 of <%= totalReadBooks %> books. <a href="/user/library" style="color:var(--gold)">View all →</a></p>
+        <% } %>
       <% } %>
     </div>
 
@@ -148,18 +161,20 @@
             <div class="checkout-total-label">Total</div>
             <div class="checkout-total-amount">₹<%= cartTotal %></div>
           </div>
-          <form action="/books/checkout" method="POST">
-            <button type="submit" class="btn-checkout">
-              <i class="fas fa-credit-card me-2"></i>Checkout — ₹<%= cartTotal %>
-            </button>
-          </form>
+          <button
+            type="button"
+            class="btn-checkout"
+            data-book-ids='<%- JSON.stringify(cartBooks.map((b) => b.id)) %>'
+            onclick="startCheckout(this)">
+            <i class="fas fa-credit-card me-2"></i>Pay Securely — ₹<%= cartTotal %>
+          </button>
         </div>
       <% } %>
     </div>
 
     <!-- LIBRARY PANEL -->
     <div id="panel-library" class="dash-panel" style="display:none">
-      <div class="dash-section-title"><i class="fas fa-bookmark" style="color:var(--green)"></i> My Library</div>
+      <div class="dash-section-title"><i class="fas fa-bookmark" style="color:var(--green)"></i> My Library <span style="color:var(--text-3);font-size:.9rem"><%= totalPurchasedBooks > 0 ? '(' + totalPurchasedBooks + ')' : '' %></span></div>
       <% if (purchasedBooks.length === 0) { %>
         <div class="empty-state">
           <div class="empty-state-icon">🏛️</div>
@@ -182,12 +197,15 @@
           </div>
           <% }) %>
         </div>
+        <% if (showReadMorePurchased) { %>
+          <p style="font-size:.85rem;color:var(--text-3);margin-top:1rem">Showing <%= purchasedBooks.length %> of <%= totalPurchasedBooks %> books. <a href="/user/library-full" style="color:var(--gold)">View all →</a></p>
+        <% } %>
       <% } %>
     </div>
 
     <!-- HISTORY PANEL -->
     <div id="panel-history" class="dash-panel" style="display:none">
-      <div class="dash-section-title"><i class="fas fa-clock" style="color:var(--blue)"></i> Reading History</div>
+      <div class="dash-section-title"><i class="fas fa-clock" style="color:var(--blue)"></i> Reading History <span style="color:var(--text-3);font-size:.9rem"><%= totalReadBooks > 0 ? '(' + totalReadBooks + ')' : '' %></span></div>
       <% if (readBooks.length === 0) { %>
         <div class="empty-state">
           <div class="empty-state-icon">📚</div>
@@ -197,11 +215,12 @@
       <% } else { %>
         <div class="small-book-grid">
           <% readBooks.forEach(book => { %>
+          <% const prog = readingProgressMap && readingProgressMap[book.id] ? readingProgressMap[book.id].progressPercent : 0 %>
           <div class="small-book-card">
             <div class="small-book-cover"><img src="<%= book.cover %>" alt="<%= book.title %>" loading="lazy"></div>
             <div class="small-book-meta">
               <div class="small-book-name"><%= book.title %></div>
-              <div class="small-book-auth"><%= book.author %></div>
+              <div class="small-book-auth"><%= book.author %> • <%= prog %>% read</div>
             </div>
             <div class="small-book-hover">
               <button class="small-book-btn" onclick="location.href='/books/<%= book.id %>/read'">Continue</button>
@@ -210,6 +229,40 @@
           </div>
           <% }) %>
         </div>
+        <% if (showReadMoreRead) { %>
+          <p style="font-size:.85rem;color:var(--text-3);margin-top:1rem">Showing <%= readBooks.length %> of <%= totalReadBooks %> books.</p>
+        <% } %>
+      <% } %>
+    </div>
+
+    <!-- WISHLIST PANEL -->
+    <div id="panel-wishlist" class="dash-panel" style="display:none">
+      <div class="dash-section-title"><i class="fas fa-heart" style="color:var(--red)"></i> Wishlist <span style="color:var(--text-3);font-size:.9rem"><%= totalWishlist > 0 ? '(' + totalWishlist + ')' : '' %></span></div>
+      <% if (wishlistedBooks.length === 0) { %>
+        <div class="empty-state">
+          <div class="empty-state-icon">💖</div>
+          <h4>No saved books yet</h4>
+          <p>Save books from the library to revisit them later. <a href="/books">Browse books</a></p>
+        </div>
+      <% } else { %>
+        <div class="small-book-grid">
+          <% wishlistedBooks.forEach(book => { %>
+          <div class="small-book-card">
+            <div class="small-book-cover"><img src="<%= book.cover %>" alt="<%= book.title %>" loading="lazy"></div>
+            <div class="small-book-meta">
+              <div class="small-book-name"><%= book.title %></div>
+              <div class="small-book-auth"><%= book.author %></div>
+            </div>
+            <div class="small-book-hover">
+              <button class="small-book-btn" onclick="location.href='/books/<%= book.id %>'">Open</button>
+            </div>
+            <span class="small-book-label label-owned">Saved</span>
+          </div>
+          <% }) %>
+        </div>
+        <% if (showReadMoreWishlist) { %>
+          <p style="font-size:.85rem;color:var(--text-3);margin-top:1rem">Showing <%= wishlistedBooks.length %> of <%= totalWishlist %> books. <a href="/wishlist" style="color:var(--gold)">View all →</a></p>
+        <% } %>
       <% } %>
     </div>
 

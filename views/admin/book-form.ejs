@@ -1,0 +1,100 @@
+<%- include('../partials/header') %>
+
+<div class="mt-page">
+  <section class="section section-dark">
+    <div class="container admin-wrap">
+      <div class="admin-topbar">
+        <div>
+          <div class="section-label">Admin Panel</div>
+          <h2 class="admin-title"><%= isEdit ? 'Edit Book' : 'Add New Book' %></h2>
+        </div>
+        <a href="/admin/dashboard" class="btn-ghost"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+      </div>
+
+      <form method="POST" action="<%= action %>" class="admin-form-grid">
+        <div class="admin-field">
+          <label>Book ID (Numeric)</label>
+          <input type="number" name="id" value="<%= book.id || '' %>" <%= isEdit ? 'readonly' : 'required' %>>
+        </div>
+
+        <div class="admin-field">
+          <label>Title</label>
+          <input type="text" name="title" value="<%= book.title || '' %>" required>
+        </div>
+
+        <div class="admin-field">
+          <label>Author</label>
+          <input type="text" name="author" value="<%= book.author || '' %>" required>
+        </div>
+
+        <div class="admin-field">
+          <label>Price (INR)</label>
+          <input type="number" name="price" value="<%= book.price || 0 %>" min="0" step="1" required>
+        </div>
+
+        <div class="admin-field">
+          <label>Category</label>
+          <input type="text" name="category" value="<%= book.category || '' %>" required>
+        </div>
+
+        <div class="admin-field">
+          <label>Origin</label>
+          <select name="origin" required>
+            <option value="Indian" <%= book.origin === 'Indian' ? 'selected' : '' %>>Indian</option>
+            <option value="Foreign" <%= book.origin === 'Foreign' ? 'selected' : '' %>>Foreign</option>
+          </select>
+        </div>
+
+        <div class="admin-field">
+          <label>Pages</label>
+          <input type="number" name="pages" value="<%= book.pages || 0 %>" min="0">
+        </div>
+
+        <div class="admin-field">
+          <label>Rating</label>
+          <input type="number" name="rating" value="<%= book.rating || 0 %>" min="0" max="5" step="0.1">
+        </div>
+
+        <div class="admin-field admin-field-full">
+          <label>Cover Image URL</label>
+          <input type="url" name="cover" value="<%= book.cover || '' %>">
+        </div>
+
+        <div class="admin-field admin-field-full">
+          <label>PDF URL (Optional)</label>
+          <input type="url" name="pdfUrl" value="<%= book.pdfUrl || '' %>" placeholder="https://...pdf">
+        </div>
+
+        <div class="admin-field admin-field-full">
+          <label>Short Description</label>
+          <textarea name="description" rows="3"><%= book.description || '' %></textarea>
+        </div>
+
+        <div class="admin-field admin-field-full">
+          <label>Preview Text</label>
+          <textarea name="preview" rows="4"><%= book.preview || '' %></textarea>
+        </div>
+
+        <div class="admin-field admin-field-full">
+          <label>Full Content (Paste text)</label>
+          <textarea name="fullText" rows="10"><%= book.fullText || '' %></textarea>
+        </div>
+
+        <div class="admin-field admin-switch">
+          <label>
+            <input type="checkbox" name="bestseller" value="true" <%= book.bestseller ? 'checked' : '' %>>
+            Mark as bestseller
+          </label>
+        </div>
+
+        <div class="admin-actions">
+          <button type="submit" class="btn-primary-gold">
+            <i class="fas fa-save"></i> <%= isEdit ? 'Update Book' : 'Create Book' %>
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+
+<%- include('../partials/footer') %>

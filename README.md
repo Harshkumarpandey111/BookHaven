@@ -1,20 +1,18 @@
-# 📚 Leafr — Online Book Store SaaS
+# BookHaven - Production Upgrade (Phase 1)
 
-A premium full-stack book reading and purchasing platform built with **Node.js + Express + MongoDB + EJS + Bootstrap**.
+Production-ready backend refactor in progress for a full-stack bookstore platform built with Node.js + Express + MongoDB + EJS.
 
 ---
 
-## ✨ Features
+## Completed in Phase 1
 
-- **48 Curated Books** — 25 Indian + 23 Foreign authors
-- **Free Online Reader** — Font size control, dark/light mode, reading progress bar
-- **Cart & Purchase System** — Add to cart, checkout, permanent library
-- **User Dashboard** — Sidebar with Overview, Cart, Library, Reading History panels
-- **Book Detail with Tabs** — About · Index (Table of Contents) · Preview
-- **MongoDB** — Users, sessions, and books all stored in MongoDB Atlas
-- **Secure Auth** — bcryptjs password hashing + Mongoose pre-save hook
-- **Scroll Reveal Animations** — Smooth entrance animations on scroll
-- **Dark SaaS Design** — Deep ink theme with gold accents, Fraunces serif font
+- JWT-based authentication (cookie and Bearer token support)
+- Password hashing with bcrypt (Mongoose pre-save)
+- Route protection middleware and role-based authorization middleware
+- Input validation using express-validator
+- Security middleware stack: Helmet, rate limiting, request logging (Morgan)
+- Centralized not-found and global error handling middleware
+- MVC-oriented layering started: controllers, services, middlewares, validators, utils
 
 ---
 
@@ -28,9 +26,13 @@ npm install
 ### 2. Create `.env` file in the project root
 ```
 MONGO_URI=mongodb+srv://your-atlas-uri/bookhaven
-SESSION_SECRET=your-secret-key-here
+SESSION_SECRET=your-session-secret
+JWT_ACCESS_SECRET=your-jwt-secret
+JWT_ACCESS_EXPIRES_IN=1d
 PORT=3000
 ```
+
+You can copy from `.env.example` and replace values with real secrets.
 
 ### 3. Seed the database (run once)
 ```bash
@@ -46,51 +48,112 @@ Open **http://localhost:3000** in your browser.
 
 ---
 
-## 📁 Project Structure
+## Updated Structure
 
 ```
 bookstore/
 ├── app.js                 # Server entry point
 ├── seed.js                # Seed 48 books into MongoDB
-├── .env                   # Environment variables (not committed)
+├── .env.example           # Environment template
 ├── config/
 │   └── db.js              # MongoDB connection
+├── controllers/
+│   └── auth.controller.js
+├── services/
+│   └── auth.service.js
+├── middlewares/
+│   ├── auth.middleware.js
+│   ├── error.middleware.js
+│   ├── rateLimit.middleware.js
+│   └── validation.middleware.js
 ├── models/
-│   ├── User.js            # User schema (name, email, readBooks, cart, purchased)
-│   └── Book.js            # Book schema (title, author, fullText, index, etc.)
+│   ├── User.js            # User schema + role
+│   └── Book.js
 ├── routes/
-│   ├── auth.js            # Register / Login / Logout
-│   ├── books.js           # Browse / Detail / Read / Buy / Checkout
-│   └── user.js            # Dashboard / Cart remove
+│   ├── auth.js            # Web auth routes
+│   ├── admin.js           # Protected admin example route
+│   ├── books.js
+│   ├── user.js
+│   └── api/
+│       └── auth.js        # API auth routes
+├── validators/
+│   └── auth.validator.js
+├── utils/
+│   ├── AppError.js
+│   ├── asyncHandler.js
+│   └── jwt.js
 ├── views/
-│   ├── partials/
-│   │   ├── header.ejs     # Navbar + toast notifications
-│   │   └── footer.ejs     # Footer + scripts
-│   ├── home.ejs           # Landing page
-│   ├── books.ejs          # Browse library
-│   ├── book-detail.ejs    # Book page (About · Index · Preview tabs)
-│   ├── read.ejs           # Online reader
-│   ├── dashboard.ejs      # User dashboard
-│   ├── login.ejs
-│   ├── register.ejs
-│   └── 404.ejs
+│   └── ...
 ├── public/
-│   ├── css/style.css      # Full SaaS design system
-│   └── js/main.js         # Animations, reader, tabs
+│   └── ...
 └── data/
-    └── books.json         # Source data (seeded into MongoDB)
+    └── books.json
 ```
+
+## Authentication Endpoints
+
+- POST /api/auth/register
+- POST /api/auth/login
+- POST /api/auth/logout
+- GET /api/auth/me (protected)
+
+## Payment Endpoints (Razorpay)
+
+- POST /payments/create-order (protected)
+- POST /payments/verify (protected)
+
+Checkout now creates an order, opens Razorpay on client, and unlocks purchased books only after server-side signature verification.
+
+## Admin Routes (RBAC: admin only)
+
+- GET /admin or /admin/dashboard (dashboard)
+- GET /admin/books/new
+- POST /admin/books
+- GET /admin/books/:id/edit
+- POST /admin/books/:id/update
+- POST /admin/books/:id/delete
+- POST /admin/users/:id/role
+- POST /admin/users/:id/delete
+
+## Discovery + Social Features
+
+- GET /books?search=&category=&origin=&availability=&minRating=&sort=&page=&perPage=
+- POST /wishlist/toggle/:bookId
+- GET /wishlist
+- POST /books/:id/reviews
+- POST /books/:id/reviews/:reviewId/delete
+
+Search filters now support free/paid books, minimum rating, sort order, and **pagination** (page, perPage with defaults page=1, perPage=12). Wishlist and reviews are persisted in dedicated collections.
+
+## Pagination
+
+All list endpoints support pagination parameters:
+
+- `page`: Current page number (default: 1)
+- `perPage`: Items per page (default: 12, max: 50)
+
+Example:
+```
+GET /books?page=2&perPage=20
+```
+
+Dashboard preview sections show limited items with "View more" links for full lists.
+
+## Example Protected Route
+
+- GET /admin/dashboard (protected + admin-only role check)
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Layer      | Technology                          |
 |------------|-------------------------------------|
 | Backend    | Node.js, Express.js                 |
 | Database   | MongoDB + Mongoose                  |
-| Sessions   | express-session + connect-mongo     |
-| Auth       | bcryptjs                            |
+| Sessions   | express-session + connect-mongo (flash messaging) |
+| Auth       | JWT + bcryptjs                      |
+| Security   | helmet, express-rate-limit, morgan, express-validator |
 | Templates  | EJS                                 |
 | Styling    | Custom CSS + Bootstrap 5            |
 | Fonts      | Fraunces (serif) + Inter (sans)     |

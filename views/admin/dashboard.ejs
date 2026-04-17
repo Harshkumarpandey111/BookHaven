@@ -1,0 +1,110 @@
+<%- include('../partials/header') %>
+
+<div class="mt-page">
+  <section class="section section-dark">
+    <div class="container admin-wrap">
+      <div class="admin-topbar">
+        <div>
+          <div class="section-label">Admin Panel</div>
+          <h2 class="admin-title">Store Management</h2>
+          <p class="admin-sub">Manage books, users, and content from one place.</p>
+        </div>
+        <a href="/admin/books/new" class="btn-primary-gold"><i class="fas fa-plus"></i> Add Book</a>
+      </div>
+
+      <div class="admin-stats">
+        <div class="admin-stat-card">
+          <div class="admin-stat-label">Total Books</div>
+          <div class="admin-stat-value"><%= stats.totalBooks %></div>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-label">Total Users</div>
+          <div class="admin-stat-value"><%= stats.totalUsers %></div>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-label">Admins</div>
+          <div class="admin-stat-value"><%= stats.totalAdmins %></div>
+        </div>
+      </div>
+
+      <div class="admin-grid">
+        <div class="admin-panel">
+          <div class="admin-panel-head">
+            <h3>Books</h3>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Title</th>
+                  <th>Author</th>
+                  <th>Price</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% books.forEach((book) => { %>
+                  <tr>
+                    <td><%= book.id %></td>
+                    <td><%= book.title %></td>
+                    <td><%= book.author %></td>
+                    <td>₹<%= book.price %></td>
+                    <td>
+                      <a href="/admin/books/<%= book.id %>/edit" class="admin-link">Edit</a>
+                      <form action="/admin/books/<%= book.id %>/delete" method="POST" style="display:inline">
+                        <button type="submit" class="admin-link admin-link-danger" onclick="return confirm('Delete this book?')">Delete</button>
+                      </form>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel">
+          <div class="admin-panel-head">
+            <h3>Users</h3>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% users.forEach((u) => { %>
+                  <tr>
+                    <td><%= u.name %></td>
+                    <td><%= u.email %></td>
+                    <td><span class="admin-role <%= u.role === 'admin' ? 'is-admin' : 'is-user' %>"><%= u.role %></span></td>
+                    <td>
+                      <% if (u._id.toString() !== currentAdminId) { %>
+                        <form action="/admin/users/<%= u._id %>/role" method="POST" style="display:inline">
+                          <input type="hidden" name="role" value="<%= u.role === 'admin' ? 'user' : 'admin' %>">
+                          <button type="submit" class="admin-link"><%= u.role === 'admin' ? 'Make User' : 'Make Admin' %></button>
+                        </form>
+                        <form action="/admin/users/<%= u._id %>/delete" method="POST" style="display:inline">
+                          <button type="submit" class="admin-link admin-link-danger" onclick="return confirm('Delete this user account?')">Delete</button>
+                        </form>
+                      <% } else { %>
+                        <span class="admin-link" style="opacity:.6">Current account</span>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<%- include('../partials/footer') %>

@@ -14,10 +14,16 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+    index: true
+  },
   password: {
     type: String,
     required: [true, 'Password is required'],
-    minlength: 6
+    minlength: 8
   },
   // Arrays store book IDs (numbers) — same as before but now in MongoDB
   readBooks: {
@@ -26,6 +32,10 @@ const userSchema = new mongoose.Schema({
   },
   purchasedBooks: {
     type: [Number],
+    default: []
+  },
+  readingProgress: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ReadingProgress' }],
     default: []
   },
   cart: {

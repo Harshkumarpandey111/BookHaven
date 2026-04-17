@@ -263,6 +263,354 @@ img { display: block; max-width: 100%; }
   color: var(--text); font-size: 0.9rem; font-weight: 500;
   cursor: pointer; transition: all 0.25s var(--ease);
 }
+
+.btn-link-book {
+  margin-top: 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 0.84rem;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.btn-link-book:hover {
+  color: var(--gold);
+}
+
+.wishlist-active {
+  color: var(--red) !important;
+}
+
+.books-filter-form {
+  margin-top: 0.75rem;
+}
+
+.books-filter-selects {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.books-filter-selects select {
+  min-width: 150px;
+  height: 42px;
+  border: 1px solid var(--border-2);
+  background: var(--ink-3);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 0 12px;
+  outline: none;
+}
+
+.reviews-summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--ink-2);
+  margin-bottom: 1rem;
+}
+
+.reviews-summary-score {
+  font-size: 2rem;
+  color: var(--gold);
+  font-family: 'Fraunces', serif;
+}
+
+.reviews-summary-label {
+  color: var(--text-2);
+  font-size: 0.85rem;
+}
+
+.reviews-summary-sub {
+  color: var(--text-3);
+  font-size: 0.78rem;
+}
+
+.review-form {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--ink-2);
+  margin-bottom: 1rem;
+}
+
+.review-form label {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--text-2);
+  font-size: 0.84rem;
+}
+
+.review-form select,
+.review-form textarea {
+  width: 100%;
+  border: 1px solid var(--border-2);
+  background: var(--ink-3);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  outline: none;
+}
+
+.review-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.review-card {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--ink-2);
+}
+
+.review-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.review-author {
+  color: var(--cream);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.review-date {
+  color: var(--text-3);
+  font-size: 0.75rem;
+}
+
+.review-stars {
+  color: var(--gold-light);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.review-comment {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ADMIN PANEL
+══════════════════════════════════════════════════════════════════════════ */
+.admin-wrap {
+  max-width: 1200px;
+}
+
+.admin-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-title {
+  color: var(--cream);
+  font-size: 1.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.admin-sub {
+  color: var(--text-2);
+  font-size: 0.92rem;
+}
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1.2rem;
+}
+
+.admin-stat-card {
+  background: var(--ink-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 0.85rem 1rem;
+}
+
+.admin-stat-label {
+  color: var(--text-3);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.admin-stat-value {
+  color: var(--cream);
+  font-family: 'Fraunces', serif;
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.admin-panel {
+  background: var(--ink-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.admin-panel-head {
+  border-bottom: 1px solid var(--border);
+  padding: 0.9rem 1rem;
+}
+
+.admin-panel-head h3 {
+  font-size: 1.1rem;
+  color: var(--cream);
+}
+
+.admin-table-wrap {
+  overflow: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.admin-table th {
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: 0.7rem;
+}
+
+.admin-link {
+  border: none;
+  background: none;
+  color: var(--gold);
+  font-size: 0.82rem;
+  margin-right: 0.65rem;
+  cursor: pointer;
+}
+
+.admin-link-danger {
+  color: var(--red);
+}
+
+.admin-role {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.admin-role.is-admin {
+  background: rgba(91,156,246,0.14);
+  color: var(--blue);
+}
+
+.admin-role.is-user {
+  background: rgba(201,168,76,0.14);
+  color: var(--gold-light);
+}
+
+.admin-form-grid {
+  background: var(--ink-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 0.9rem;
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-field label {
+  color: var(--text-2);
+  font-size: 0.82rem;
+}
+
+.admin-field input,
+.admin-field select,
+.admin-field textarea {
+  width: 100%;
+  border: 1px solid var(--border-2);
+  background: var(--ink-3);
+  color: var(--text);
+  border-radius: 8px;
+  font-size: 0.88rem;
+  padding: 0.62rem 0.68rem;
+  outline: none;
+}
+
+.admin-field textarea {
+  resize: vertical;
+}
+
+.admin-field input:focus,
+.admin-field select:focus,
+.admin-field textarea:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-dim);
+}
+
+.admin-field-full {
+  grid-column: 1 / -1;
+}
+
+.admin-switch {
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.admin-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.2rem;
+}
+
+@media (max-width: 900px) {
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-stats {
+    grid-template-columns: 1fr;
+  }
+}
 .btn-ghost:hover { border-color: var(--text-2); background: var(--ink-3); color: var(--text); }
 
 .hero-stats {
@@ -1053,4 +1401,92 @@ img { display: block; max-width: 100%; }
   .books-grid { grid-template-columns: repeat(2,1fr); }
   .dash-stat-grid { grid-template-columns: 1fr; }
   .hero-showcase { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PAGINATION
+══════════════════════════════════════════════════════════════════════════ */
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-numbers {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pagination-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.pagination-number:hover {
+  background: var(--surface-2);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.pagination-number.active {
+  background: var(--gold);
+  color: var(--ink);
+  border-color: var(--gold);
+  font-weight: 600;
+}
+
+.pagination-ellipsis {
+  color: var(--text-3);
+  padding: 0 0.25rem;
+}
+
+.pagination-info {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-3);
+  margin-top: 1rem;
 }

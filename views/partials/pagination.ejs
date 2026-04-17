@@ -1,0 +1,62 @@
+<!-- Pagination Component -->
+<% if (totalPages > 1) { %>
+  <div class="pagination-controls">
+    <!-- Previous Button -->
+    <% if (hasPrevPage) { %>
+      <a href="?<%= queryString %>&page=<%= currentPage - 1 %>" class="pagination-btn">
+        <i class="fas fa-chevron-left"></i> Previous
+      </a>
+    <% } else { %>
+      <button class="pagination-btn" disabled>
+        <i class="fas fa-chevron-left"></i> Previous
+      </button>
+    <% } %>
+
+    <!-- Page Numbers -->
+    <div class="pagination-numbers">
+      <% 
+        // Show up to 7 page numbers (with ellipsis if needed)
+        const startPage = Math.max(1, currentPage - 3);
+        const endPage = Math.min(totalPages, currentPage + 3);
+      %>
+      
+      <% if (startPage > 1) { %>
+        <a href="?<%= queryString %>&page=1" class="pagination-number">1</a>
+        <% if (startPage > 2) { %>
+          <span class="pagination-ellipsis">...</span>
+        <% } %>
+      <% } %>
+
+      <% for (let i = startPage; i <= endPage; i++) { %>
+        <% if (i === currentPage) { %>
+          <span class="pagination-number active"><%= i %></span>
+        <% } else { %>
+          <a href="?<%= queryString %>&page=<%= i %>" class="pagination-number"><%= i %></a>
+        <% } %>
+      <% } %>
+
+      <% if (endPage < totalPages) { %>
+        <% if (endPage < totalPages - 1) { %>
+          <span class="pagination-ellipsis">...</span>
+        <% } %>
+        <a href="?<%= queryString %>&page=<%= totalPages %>" class="pagination-number"><%= totalPages %></a>
+      <% } %>
+    </div>
+
+    <!-- Next Button -->
+    <% if (hasNextPage) { %>
+      <a href="?<%= queryString %>&page=<%= currentPage + 1 %>" class="pagination-btn">
+        Next <i class="fas fa-chevron-right"></i>
+      </a>
+    <% } else { %>
+      <button class="pagination-btn" disabled>
+        Next <i class="fas fa-chevron-right"></i>
+      </button>
+    <% } %>
+  </div>
+
+  <!-- Page Info -->
+  <div class="pagination-info">
+    Page <%= currentPage %> of <%= totalPages %> | Showing <%= Math.min(perPage, (totalBooks - ((currentPage - 1) * perPage))) %> of <%= totalBooks %> results
+  </div>
+<% } %>

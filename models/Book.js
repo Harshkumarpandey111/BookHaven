@@ -53,6 +53,10 @@ const bookSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  pdfUrl: {
+    type: String,
+    default: ''
+  },
   bestseller: {
     type: Boolean,
     default: false
