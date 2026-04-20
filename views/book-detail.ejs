@@ -57,10 +57,40 @@
               <i class="fas fa-heart <%= wishlistEntry ? 'wishlist-active' : '' %>"></i>
               <%= wishlistEntry ? 'Saved to Wishlist' : 'Save to Wishlist' %>
             </button>
+
+            <!-- Add to Collection -->
+            <div style="position:relative">
+              <button class="btn-buy-full" type="button" id="addToListBtn" onclick="toggleListDropdown()">
+                <i class="fas fa-layer-group"></i> Add to Collection
+              </button>
+              <div id="listDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--ink-2);border:1px solid var(--border-2);border-radius:var(--r);box-shadow:0 12px 32px rgba(0,0,0,.4);z-index:100;max-height:200px;overflow-y:auto">
+                <div style="padding:10px;text-align:center;color:var(--text-3);font-size:.8rem" id="listLoading">Loading...</div>
+              </div>
+            </div>
+            <script>
+              let listsLoaded = false;
+              function toggleListDropdown() {
+                const dd = document.getElementById('listDropdown');
+                if (dd.style.display !== 'none') { dd.style.display = 'none'; return; }
+                dd.style.display = 'block';
+                if (!listsLoaded) {
+                  fetch('/lists/api/my-lists').then(r => r.json()).then(data => {
+                    listsLoaded = true;
+                    if (!data.lists || data.lists.length === 0) {
+                      dd.innerHTML = '<div style="padding:12px;text-align:center;font-size:.8rem;color:var(--text-3)">No collections yet. <a href="/lists" style="color:var(--gold)">Create one</a></div>';
+                      return;
+                    }
+                    dd.innerHTML = data.lists.map(l => {
+                      const hasBook = l.books && l.books.includes(<%= book.id %>);
+                      return `<div style="padding:8px 12px;font-size:.8rem;color:${hasBook ? 'var(--green)' : 'var(--text-2)'};cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s" onmouseover="this.style.background='var(--gold-dim)'" onmouseout="this.style.background=''" onclick="addToReadingList('${l._id}', ${<%= book.id %>})"><i class="fas fa-${hasBook ? 'check-circle' : 'plus-circle'}" style="margin-right:6px"></i>${l.name}</div>`;
+                    }).join('') + '<div style="padding:8px 12px;font-size:.8rem;border-top:1px solid var(--border)"><a href="/lists" style="color:var(--gold)"><i class="fas fa-plus"></i> New collection</a></div>';
+                  }).catch(() => { dd.innerHTML = '<div style="padding:12px;text-align:center;font-size:.8rem;color:var(--text-3)">Error loading lists</div>'; });
+                }
+              }
+              document.addEventListener('click', e => { if (!e.target.closest('#addToListBtn') && !e.target.closest('#listDropdown')) document.getElementById('listDropdown').style.display = 'none'; });
+            </script>
           <% } %>
         </div>
-
-        <!-- Meta Pills -->
         <div class="detail-meta-pills" style="margin-top:1.25rem">
           <div class="detail-meta-pill rating">
             <i class="fas fa-star"></i> <%= book.rating %> / 5.0

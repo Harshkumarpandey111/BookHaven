@@ -27,6 +27,26 @@
         </div>
       </div>
 
+      <!-- ANALYTICS CHARTS -->
+      <div class="chart-grid" style="margin-bottom:2rem">
+        <div class="chart-card">
+          <h4 class="chart-card-title"><i class="fas fa-chart-bar" style="color:var(--gold)"></i> Revenue — Last 30 Days</h4>
+          <canvas id="revenueChart" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <h4 class="chart-card-title"><i class="fas fa-trophy" style="color:var(--gold)"></i> Most Purchased Books</h4>
+          <canvas id="purchasedChart" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <h4 class="chart-card-title"><i class="fas fa-users" style="color:var(--blue)"></i> User Registrations</h4>
+          <canvas id="registrationsChart" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <h4 class="chart-card-title"><i class="fas fa-globe" style="color:var(--green)"></i> Indian vs Foreign</h4>
+          <canvas id="originChart" height="220"></canvas>
+        </div>
+      </div>
+
       <div class="admin-grid">
         <div class="admin-panel">
           <div class="admin-panel-head">
@@ -106,5 +126,131 @@
     </div>
   </section>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(async function() {
+  try {
+    const res = await fetch('/api/admin/stats', { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.success) return;
+
+    const gridColor = 'rgba(255,255,255,.06)';
+    const gold = '#c9a84c';
+    const blue = '#5b9cf6';
+    const green = '#3ddc97';
+    const red = '#ff6b6b';
+    const textMuted = '#a8a49c';
+
+    Chart.defaults.color = textMuted;
+    Chart.defaults.borderColor = gridColor;
+
+    // 1. Revenue chart
+    new Chart(document.getElementById('revenueChart'), {
+      type: 'bar',
+      data: {
+        labels: data.revenue.labels,
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: data.revenue.values,
+          backgroundColor: gold + '88',
+          borderColor: gold,
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 9 } } },
+          y: { grid: { color: gridColor }, ticks: { callback: v => '₹' + v } }
+        }
+      }
+    });
+
+    // 2. Most purchased
+    if (data.mostPurchased.length > 0) {
+      new Chart(document.getElementById('purchasedChart'), {
+        type: 'bar',
+        data: {
+          labels: data.mostPurchased.map(m => m.title.length > 20 ? m.title.slice(0,20)+'…' : m.title),
+          datasets: [{
+            label: 'Purchases',
+            data: data.mostPurchased.map(m => m.count),
+            backgroundColor: green + '88',
+            borderColor: green,
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: gridColor } },
+            y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    // 3. Registrations
+    if (data.registrations.length > 0) {
+      new Chart(document.getElementById('registrationsChart'), {
+        type: 'line',
+        data: {
+          labels: data.registrations.map(r => r.week),
+          datasets: [{
+            label: 'New Users',
+            data: data.registrations.map(r => r.count),
+            borderColor: blue,
+            backgroundColor: blue + '22',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: blue,
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: gridColor }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    // 4. Origin ratio
+    if (data.originRatio.length > 0) {
+      new Chart(document.getElementById('originChart'), {
+        type: 'doughnut',
+        data: {
+          labels: data.originRatio.map(o => o.origin),
+          datasets: [{
+            data: data.originRatio.map(o => o.count),
+            backgroundColor: ['#ff9933', blue],
+            borderColor: '#1c1c26',
+            borderWidth: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom', labels: { padding: 16, font: { size: 12 } } }
+          }
+        }
+      });
+    }
+
+  } catch (e) {
+    console.error('Admin charts error:', e);
+  }
+})();
+</script>
 
 <%- include('../partials/footer') %>

@@ -4,10 +4,12 @@ const router = express.Router();
 const Book = require('../models/Book');
 const User = require('../models/User');
 const Order = require('../models/Order');
+const Notification = require('../models/Notification');
 const { protect } = require('../middlewares/auth.middleware');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 const { createProviderOrder, verifyProviderSignature } = require('../services/payment.service');
+const { sendPurchaseReceipt } = require('../services/email.service');
 
 router.post('/create-order', protect, asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id);
@@ -79,12 +81,16 @@ router.post('/verify', protect, asyncHandler(async (req, res) => {
     razorpay_signature: razorpaySignature
   } = req.body;
 
+  console.log('Payment verification attempt:', { razorpayOrderId, razorpayPaymentId, userId: req.user.id });
+
   if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+    console.error('Missing payment verification fields:', { razorpayOrderId, razorpayPaymentId, razorpaySignature });
     throw new AppError('Missing payment verification fields', 400);
   }
 
   const orderDoc = await Order.findOne({ razorpayOrderId, user: req.user.id });
   if (!orderDoc) {
+    console.error('Order not found for verification:', { razorpayOrderId, userId: req.user.id });
     throw new AppError('Order not found for verification', 404);
   }
 
@@ -99,9 +105,10 @@ router.post('/verify', protect, asyncHandler(async (req, res) => {
   });
 
   if (!signatureValid) {
+    console.warn('Invalid payment signature for order:', razorpayOrderId);
     orderDoc.status = 'failed';
     await orderDoc.save();
-    throw new AppError('Invalid payment signature', 400);
+    throw new AppError('Payment signature verification failed. Payment marked as failed. Please contact support.', 400);
   }
 
   orderDoc.status = 'paid';
@@ -115,7 +122,27 @@ router.post('/verify', protect, asyncHandler(async (req, res) => {
     $pull: { cart: { $in: orderDoc.books } }
   });
 
-  return res.json({ success: true, message: 'Payment verified and books unlocked' });
+  // Send purchase receipt email and create notification (fire-and-forget)
+  const purchasedBooks = await Book.find({ id: { $in: orderDoc.books } });
+  const buyer = await User.findById(req.user.id).select('name email');
+  if (buyer) {
+    sendPurchaseReceipt({
+      to: buyer.email,
+      name: buyer.name,
+      order: orderDoc,
+      books: purchasedBooks
+    });
+    Notification.create({
+      user: req.user.id,
+      type: 'purchase',
+      title: 'Purchase Successful! ✅',
+      message: `You purchased ${purchasedBooks.length} book(s) for ₹${(orderDoc.amount / 100).toFixed(0)}. Books are now in your library.`,
+      link: '/user/dashboard'
+    }).catch(() => {});
+  }
+
+  console.log('Payment verified successfully for order:', razorpayOrderId);
+  return res.json({ success: true, message: 'Payment verified and books unlocked', orderId: orderDoc._id });
 }));
 
 module.exports = router;

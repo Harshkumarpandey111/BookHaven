@@ -28,14 +28,29 @@ async function createProviderOrder({ amount, receipt, notes }) {
 
 function verifyProviderSignature({ orderId, paymentId, signature }) {
   const secret = process.env.RAZORPAY_KEY_SECRET;
-  if (!secret) return false;
+  if (!secret) {
+    console.error('RAZORPAY_KEY_SECRET not configured');
+    return false;
+  }
 
+  // Normalize inputs - remove whitespace
+  const normalizedOrderId = (orderId || '').trim();
+  const normalizedPaymentId = (paymentId || '').trim();
+  const normalizedSignature = (signature || '').trim();
+
+  console.log('Verifying signature with:', { normalizedOrderId, normalizedPaymentId, signatureLength: normalizedSignature.length });
+
+  const message = `${normalizedOrderId}|${normalizedPaymentId}`;
   const expectedSignature = crypto
     .createHmac('sha256', secret)
-    .update(`${orderId}|${paymentId}`)
+    .update(message)
     .digest('hex');
 
-  return expectedSignature === signature;
+  console.log('Expected signature:', expectedSignature);
+  console.log('Received signature:', normalizedSignature);
+  console.log('Signature match:', expectedSignature === normalizedSignature);
+
+  return expectedSignature === normalizedSignature;
 }
 
 module.exports = {

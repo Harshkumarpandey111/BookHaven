@@ -266,9 +266,17 @@ async function startCheckout(btn) {
   try {
     const orderRes = await fetch('/payments/create-order', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
       body: JSON.stringify({ bookIds })
     });
+
+    const orderType = orderRes.headers.get('content-type') || '';
+    if (!orderType.includes('application/json')) {
+      throw new Error('Session expired. Please login again.');
+    }
 
     const orderData = await orderRes.json();
     if (!orderRes.ok || !orderData.success) {
@@ -286,14 +294,36 @@ async function startCheckout(btn) {
       name: 'BookHaven',
       description: `Purchase ${orderData.books.length} book(s)`,
       order_id: orderData.order.id,
+      method: {
+        upi: true,
+        netbanking: true,
+        card: true,
+        wallet: true,
+        paylater: false
+      },
+      international: false,
       handler: async function (response) {
         try {
+          console.log('Razorpay response received:', response);
+
           const verifyRes = await fetch('/payments/verify', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json'
+            },
             body: JSON.stringify(response)
           });
+
+          console.log('Verify response status:', verifyRes.status);
+
+          const verifyType = verifyRes.headers.get('content-type') || '';
+          if (!verifyType.includes('application/json')) {
+            throw new Error('Session expired. Please login again.');
+          }
+
           const verifyData = await verifyRes.json();
+          console.log('Verify response data:', verifyData);
 
           if (!verifyRes.ok || !verifyData.success) {
             throw new Error(verifyData.message || 'Payment verification failed');
@@ -331,5 +361,306 @@ async function startCheckout(btn) {
     btn.disabled = false;
     btn.innerHTML = originalHtml;
     showToast('error', err.message || 'Checkout failed. Please try again.');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DARK / LIGHT MODE TOGGLE
+// ══════════════════════════════════════════════════════════════════════════════
+(function () {
+  const themeToggle = document.getElementById('themeToggle');
+  const themeIcon = document.getElementById('themeIcon');
+  if (!themeToggle) return;
+
+  function applyGlobalTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('bh-theme', t);
+    if (themeIcon) {
+      themeIcon.className = t === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+    }
+  }
+
+  // Apply saved theme
+  const saved = localStorage.getItem('bh-theme') || 'dark';
+  applyGlobalTheme(saved);
+
+  themeToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    applyGlobalTheme(current === 'dark' ? 'light' : 'dark');
+  });
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  SEARCH AUTOCOMPLETE
+// ══════════════════════════════════════════════════════════════════════════════
+(function () {
+  const input = document.getElementById('navSearchInput');
+  const dropdown = document.getElementById('autocompleteDropdown');
+  if (!input || !dropdown) return;
+
+  let timer = null;
+  let activeIndex = -1;
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) {
+      dropdown.style.display = 'none';
+      return;
+    }
+    timer = setTimeout(() => fetchSuggestions(q), 300);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    const items = dropdown.querySelectorAll('.autocomplete-item');
+    if (!items.length || dropdown.style.display === 'none') return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, items.length - 1);
+      updateActive(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+      updateActive(items);
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault();
+      items[activeIndex]?.click();
+    } else if (e.key === 'Escape') {
+      dropdown.style.display = 'none';
+      activeIndex = -1;
+    }
+  });
+
+  function updateActive(items) {
+    items.forEach((it, i) => it.classList.toggle('active', i === activeIndex));
+  }
+
+  async function fetchSuggestions(q) {
+    try {
+      const res = await fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`);
+      const books = await res.json();
+      if (!books.length) {
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      dropdown.innerHTML = books.map(b => `
+        <div class="autocomplete-item" onclick="location.href='/books/${b.id}'">
+          <img src="${b.cover || ''}" alt="" onerror="this.style.display='none'">
+          <div class="autocomplete-item-info">
+            <div class="autocomplete-item-title">${escHtml(b.title)}</div>
+            <div class="autocomplete-item-author">${escHtml(b.author)}</div>
+          </div>
+          <span class="autocomplete-item-price">₹${b.price}</span>
+        </div>
+      `).join('');
+      dropdown.style.display = 'block';
+      activeIndex = -1;
+    } catch {
+      dropdown.style.display = 'none';
+    }
+  }
+
+  function escHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // Close dropdown on outside click
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.nav-search')) {
+      dropdown.style.display = 'none';
+      activeIndex = -1;
+    }
+  });
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  NOTIFICATION SYSTEM
+// ══════════════════════════════════════════════════════════════════════════════
+(function () {
+  const bellBtn = document.getElementById('notifBellBtn');
+  const badge = document.getElementById('notifBadge');
+  const dropdownEl = document.getElementById('notifDropdown');
+  const listEl = document.getElementById('notifList');
+  const markReadBtn = document.getElementById('notifMarkRead');
+
+  if (!bellBtn) return;
+
+  // Fetch unread count on page load
+  fetchNotifCount();
+
+  bellBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isVisible = dropdownEl.style.display !== 'none';
+    if (isVisible) {
+      dropdownEl.style.display = 'none';
+    } else {
+      dropdownEl.style.display = 'block';
+      loadNotifications();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#notifBellWrap')) {
+      dropdownEl.style.display = 'none';
+    }
+  });
+
+  if (markReadBtn) {
+    markReadBtn.addEventListener('click', async () => {
+      try {
+        await fetch('/api/notifications/read-all', { method: 'POST', headers: { 'Accept': 'application/json' } });
+        badge.style.display = 'none';
+        badge.textContent = '0';
+        document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
+        showToast('success', 'All notifications marked as read');
+      } catch { /* ignore */ }
+    });
+  }
+
+  async function fetchNotifCount() {
+    try {
+      const res = await fetch('/api/notifications/count', { headers: { 'Accept': 'application/json' } });
+      const data = await res.json();
+      if (data.success && data.unreadCount > 0) {
+        badge.textContent = data.unreadCount > 9 ? '9+' : data.unreadCount;
+        badge.style.display = 'grid';
+      } else {
+        badge.style.display = 'none';
+      }
+    } catch { /* ignore */ }
+  }
+
+  async function loadNotifications() {
+    try {
+      const res = await fetch('/api/notifications', { headers: { 'Accept': 'application/json' } });
+      const data = await res.json();
+      if (!data.success || !data.notifications.length) {
+        listEl.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+        return;
+      }
+
+      listEl.innerHTML = data.notifications.map(n => {
+        const iconClass = {
+          purchase: 'ni-purchase', new_book: 'ni-new-book',
+          welcome: 'ni-welcome', system: 'ni-system', price_drop: 'ni-system'
+        }[n.type] || 'ni-system';
+        const iconChar = {
+          purchase: '✅', new_book: '📚', welcome: '🎉', system: '🔔', price_drop: '💰'
+        }[n.type] || '🔔';
+        const timeAgo = getTimeAgo(new Date(n.createdAt));
+
+        return `
+          <div class="notif-item ${n.read ? '' : 'unread'}" onclick="${n.link ? `location.href='${n.link}'` : ''}">
+            <div class="notif-item-icon ${iconClass}">${iconChar}</div>
+            <div class="notif-item-content">
+              <div class="notif-item-title">${escHtml(n.title)}</div>
+              <div class="notif-item-msg">${escHtml(n.message)}</div>
+              <div class="notif-item-time">${timeAgo}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch {
+      listEl.innerHTML = '<div class="notif-empty">Could not load notifications</div>';
+    }
+  }
+
+  function escHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s || '';
+    return d.innerHTML;
+  }
+
+  function getTimeAgo(date) {
+    const s = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.floor(s / 60) + 'm ago';
+    if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+    if (s < 604800) return Math.floor(s / 86400) + 'd ago';
+    return date.toLocaleDateString();
+  }
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MULTI-LANGUAGE (i18n)
+// ══════════════════════════════════════════════════════════════════════════════
+(function () {
+  const langToggle = document.getElementById('langToggle');
+  const langLabel = document.getElementById('langLabel');
+  if (!langToggle) return;
+
+  let currentLang = localStorage.getItem('bh-lang') || 'en';
+  let translations = {};
+
+  async function loadLang(lang) {
+    try {
+      const res = await fetch(`/locales/${lang}.json`);
+      if (!res.ok) return {};
+      return await res.json();
+    } catch {
+      return {};
+    }
+  }
+
+  function applyTranslations(t) {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (t[key]) el.textContent = t[key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (t[key]) el.setAttribute('placeholder', t[key]);
+    });
+  }
+
+  function updateLangLabel() {
+    if (langLabel) langLabel.textContent = currentLang === 'en' ? 'EN' : 'हि';
+  }
+
+  // Load and apply on page load
+  updateLangLabel();
+  if (currentLang !== 'en') {
+    loadLang(currentLang).then(t => {
+      translations = t;
+      applyTranslations(t);
+    });
+  }
+
+  langToggle.addEventListener('click', async () => {
+    currentLang = currentLang === 'en' ? 'hi' : 'en';
+    localStorage.setItem('bh-lang', currentLang);
+    updateLangLabel();
+
+    if (currentLang === 'en') {
+      // Reload page to get original English from EJS
+      window.location.reload();
+    } else {
+      translations = await loadLang(currentLang);
+      applyTranslations(translations);
+    }
+  });
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  ADD TO READING LIST (used on book detail page)
+// ══════════════════════════════════════════════════════════════════════════════
+async function addToReadingList(listId, bookId) {
+  try {
+    const res = await fetch(`/lists/${listId}/add/${bookId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('success', data.message);
+    } else {
+      showToast('error', data.message || 'Could not add to list');
+    }
+  } catch {
+    showToast('error', 'Network error');
   }
 }

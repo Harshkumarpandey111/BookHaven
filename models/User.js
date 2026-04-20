@@ -22,8 +22,13 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: [function() { return !this.googleId; }, 'Password is required'],
     minlength: 8
+  },
+  googleId: {
+    type: String,
+    sparse: true,
+    index: true
   },
   // Arrays store book IDs (numbers) — same as before but now in MongoDB
   readBooks: {

@@ -21,20 +21,84 @@ const renderRegister = (req, res) => {
 };
 
 const register = asyncHandler(async (req, res) => {
-  await authService.registerUser(req.body);
+  await authService.startRegistration(req.body);
 
   if (isApiRequest(req)) {
-    return res.status(201).json({ message: 'Account created successfully. Please login.' });
+    return res.status(202).json({
+      message: 'OTP sent to your email. Verify OTP to complete registration.'
+    });
   }
 
-  req.flash('success', 'Account created! Please login.');
-  return res.redirect('/login');
+  req.flash('success', 'OTP sent to your email. Verify OTP to complete registration.');
+  return res.redirect(`/verify-email?email=${encodeURIComponent(req.body.email.toLowerCase())}`);
+});
+
+const renderVerifyEmail = (req, res) => {
+  if (req.user) return res.redirect('/');
+  return res.render('verify-email', {
+    title: 'Verify Email',
+    email: req.query.email || ''
+  });
+};
+
+const verifyEmail = asyncHandler(async (req, res) => {
+  const { user, accessToken } = await authService.verifyRegistrationOtp(req.body);
+
+  res.cookie('accessToken', accessToken, buildTokenCookieOptions());
+
+  if (isApiRequest(req)) {
+    return res.status(201).json({
+      message: 'Email verified. Account created successfully.',
+      accessToken,
+      user
+    });
+  }
+
+  req.flash('success', `Welcome, ${user.name}! Your account is ready.`);
+  return res.redirect('/');
 });
 
 const renderLogin = (req, res) => {
   if (req.user) return res.redirect('/');
   return res.render('login', { title: 'Login' });
 };
+
+const renderForgotPassword = (req, res) => {
+  if (req.user) return res.redirect('/');
+  return res.render('forgot-password', { title: 'Forgot Password' });
+};
+
+const forgotPassword = asyncHandler(async (req, res) => {
+  await authService.startPasswordReset(req.body);
+
+  if (isApiRequest(req)) {
+    return res.status(200).json({
+      message: 'If your email is registered, an OTP has been sent.'
+    });
+  }
+
+  req.flash('success', 'If your email is registered, an OTP has been sent.');
+  return res.redirect(`/reset-password?email=${encodeURIComponent(req.body.email.toLowerCase())}`);
+});
+
+const renderResetPassword = (req, res) => {
+  if (req.user) return res.redirect('/');
+  return res.render('reset-password', {
+    title: 'Reset Password',
+    email: req.query.email || ''
+  });
+};
+
+const resetPassword = asyncHandler(async (req, res) => {
+  await authService.resetPasswordWithOtp(req.body);
+
+  if (isApiRequest(req)) {
+    return res.status(200).json({ message: 'Password reset successful. Please login.' });
+  }
+
+  req.flash('success', 'Password reset successful. Please login.');
+  return res.redirect('/login');
+});
 
 const login = asyncHandler(async (req, res) => {
   const { user, accessToken } = await authService.loginUser(req.body);
@@ -75,8 +139,14 @@ const getProfile = asyncHandler(async (req, res) => {
 module.exports = {
   renderRegister,
   register,
+  renderVerifyEmail,
+  verifyEmail,
   renderLogin,
   login,
+  renderForgotPassword,
+  forgotPassword,
+  renderResetPassword,
+  resetPassword,
   logout,
   getProfile
 };

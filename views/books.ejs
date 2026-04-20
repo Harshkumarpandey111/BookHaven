@@ -75,7 +75,22 @@
           <p>Try a different keyword, category, or filter. <a href="/books">Clear all filters</a></p>
         </div>
       <% } else { %>
-        <div class="books-grid">
+
+        <!-- Skeleton Loading -->
+        <div id="booksSkeleton" class="skeleton-grid" style="display:grid">
+          <% for (let i = 0; i < 8; i++) { %>
+          <div class="skeleton-card">
+            <div class="skeleton-cover"></div>
+            <div class="skeleton-info">
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line short"></div>
+              <div class="skeleton-line price"></div>
+            </div>
+          </div>
+          <% } %>
+        </div>
+
+        <div class="books-grid" id="booksGrid" style="display:none">
           <% books.forEach(book => { %>
           <div class="book-card reveal">
             <div class="book-cover-wrap">
@@ -140,5 +155,15 @@
     </div>
   </section>
 </div>
+
+<script>
+// Hide skeleton, show real grid
+requestAnimationFrame(() => {
+  const skel = document.getElementById('booksSkeleton');
+  const grid = document.getElementById('booksGrid');
+  if (skel) skel.style.display = 'none';
+  if (grid) grid.style.display = '';
+});
+</script>
 
 <%- include('partials/footer') %>

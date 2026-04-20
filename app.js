@@ -27,7 +27,10 @@ app.set('trust proxy', 1);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }
+}));
 app.use(morgan('combined'));
 app.use(cookieParser());
 app.use('/api', apiLimiter);
@@ -49,6 +52,11 @@ app.use(session({
 }));
 
 app.use(flash());
+
+// Passport (Google OAuth)
+const passport = require('./config/passport');
+app.use(passport.initialize());
+
 app.use(optionalAuth);
 
 // Global middleware — inject user into every EJS view
@@ -67,7 +75,13 @@ app.use('/payments', require('./routes/payment'));
 app.use('/admin', require('./routes/admin'));
 app.use('/wishlist', require('./routes/wishlist'));
 app.use('/', require('./routes/reviews'));
+app.use('/auth', require('./routes/auth-google'));
+app.use('/lists', require('./routes/reading-lists'));
 app.use('/api/auth', require('./routes/api/auth'));
+app.use('/api/search', require('./routes/api/search'));
+app.use('/api/notifications', require('./routes/api/notifications'));
+app.use('/api/receipt', require('./routes/api/receipt'));
+app.use('/api/admin', require('./routes/api/admin-stats'));
 
 // Home
 app.get('/', async (req, res) => {

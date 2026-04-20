@@ -4,6 +4,8 @@ const Book    = require('../models/Book');
 const User    = require('../models/User');
 const ReadingProgress = require('../models/ReadingProgress');
 const Wishlist = require('../models/Wishlist');
+const Review = require('../models/Review');
+const Order = require('../models/Order');
 const { protect } = require('../middlewares/auth.middleware');
 
 // ── GET /user/dashboard ──────────────────────────────────────────────────────
@@ -20,7 +22,6 @@ router.get('/dashboard', protect, async (req, res) => {
     const previewLimit = 4;
 
     // Fetch full book objects for each list using $in operator
-    // $in matches any document whose id field is in the given array
     const [readBooks, purchasedBooks, cartBooks, progressDocs, wishlistEntries] = await Promise.all([
       Book.find({ id: { $in: user.readBooks      } }).limit(previewLimit).sort({ _id: -1 }),
       Book.find({ id: { $in: user.purchasedBooks } }).limit(previewLimit).sort({ _id: -1 }),
@@ -47,6 +48,40 @@ router.get('/dashboard', protect, async (req, res) => {
     const totalPurchasedBooks = user.purchasedBooks.length;
     const totalWishlist = user.wishlist ? user.wishlist.length : 0;
 
+    // ── Reading Statistics ──
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const [booksThisMonth, userReviews, paidOrders] = await Promise.all([
+      ReadingProgress.countDocuments({ user: req.user.id, lastReadAt: { $gte: monthStart } }),
+      Review.find({ user: req.user.id }).select('rating'),
+      Order.find({ user: req.user.id, status: 'paid' }).select('amount books paidAt receipt razorpayPaymentId _id').sort({ paidAt: -1 })
+    ]);
+
+    const avgRating = userReviews.length > 0
+      ? (userReviews.reduce((sum, r) => sum + r.rating, 0) / userReviews.length).toFixed(1)
+      : '—';
+
+    const totalSpent = paidOrders.reduce((sum, o) => sum + (o.amount / 100), 0);
+
+    // Top genre
+    let topGenre = '—';
+    if (user.readBooks.length > 0) {
+      const genreCounts = await Book.aggregate([
+        { $match: { id: { $in: user.readBooks } } },
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 1 }
+      ]);
+      if (genreCounts.length > 0) topGenre = genreCounts[0]._id;
+    }
+
+    const readingStats = {
+      booksThisMonth,
+      avgRating,
+      topGenre,
+      totalSpent: totalSpent.toFixed(0)
+    };
+
     res.render('dashboard', {
       user,
       readBooks,
@@ -55,6 +90,8 @@ router.get('/dashboard', protect, async (req, res) => {
       wishlistedBooks,
       readingProgressMap,
       cartTotal,
+      readingStats,
+      paidOrders,
       // Pagination metadata for preview sections
       totalReadBooks,
       totalPurchasedBooks,

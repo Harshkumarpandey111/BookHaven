@@ -6,6 +6,7 @@ const Book = require('../models/Book');
 const User = require('../models/User');
 const ReadingProgress = require('../models/ReadingProgress');
 const Order = require('../models/Order');
+const Notification = require('../models/Notification');
 
 router.use(protect, authorize('admin'));
 
@@ -89,6 +90,19 @@ router.post('/books', async (req, res) => {
     }
 
     await Book.create(payload);
+
+    // Notify all users about the new book (fire-and-forget)
+    User.find({}).select('_id').then(users => {
+      const notifications = users.map(u => ({
+        user: u._id,
+        type: 'new_book',
+        title: 'New book added! 📚',
+        message: `"${payload.title}" by ${payload.author} is now available on BookHaven.`,
+        link: `/books/${payload.id}`
+      }));
+      if (notifications.length > 0) Notification.insertMany(notifications).catch(() => {});
+    }).catch(() => {});
+
     req.flash('success', 'Book created successfully');
     return res.redirect('/admin');
   } catch (err) {
